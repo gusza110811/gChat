@@ -2,7 +2,7 @@ import socket
 import threading
 import commands
 
-HOST = "192.168.1.118"
+HOST = "localhost"
 PORT = 3000
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
