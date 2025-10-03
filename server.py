@@ -1,12 +1,25 @@
 import socket
 import threading
 import commands
+import json
 
-HOST = "localhost"
-PORT = 3000
+host = "localhost"
+port = 3000
+ipv6 = False
 
-sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-sock.bind((HOST,PORT))
+try:
+    with open(".cfg.json") as config:
+        configs =  json.load(config)
+        host = configs["host"]
+        port = configs["port"]
+        ipv6 = configs["ipv6"]
+except FileNotFoundError:
+    pass
+if ipv6:
+    sock = socket.socket(socket.AF_INET6,socket.SOCK_STREAM)
+else:
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+sock.bind((host,port))
 sock.listen(8)
 
 clients = []
