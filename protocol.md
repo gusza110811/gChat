@@ -10,7 +10,7 @@
 ## Server commands
 | command | description |
 | --- | --- |
-| `NOTE` | Information, not necessary to be parsed |
+| `NOTE` | Information, not required to be parsed |
 | `CTRL` | Control command, part of another command's output |
-| `RECV` | Recieved message command |
 | `ERR` | Information on a failed command |
+| `RECV` | Recieved message command |
