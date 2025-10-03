@@ -49,15 +49,16 @@ class Server(threading.Thread):
 
         while self.active:
             command = sock.recv(512).decode()
-            name = command.split()[0]
             if not command:
                 continue
+            name = command.split()[0]
+            arg = command[len(name):].strip()
 
             try:
                 func = commands.mapping[name]
             except KeyError:
                 sock.send(b"ERR Invalid Command\n")
-            func(command)
+            func(arg)
         
         sock.close()
 
