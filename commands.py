@@ -12,24 +12,24 @@ class Commands:
             "QUIT": self.QUIT,
         }
 
-    def NAME(self, args:list[str]):
-        self.server.username = args[1]
+    def NAME(self, arg:str):
+        self.server.username = arg
 
-    def MSG(self, args:list[str]):
+    def MSG(self, arg:str):
         if not self.server.username:
             self.socket.send(b"ERR No username\n")
             return
         for client in self.clients:
-            client.recieve_message(args[1],self.server.username)
+            client.recieve_message(arg,self.server.username)
 
-    def LIST(self, args:list[str]):
+    def LIST(self, arg:str):
         self.socket.send(b"CTRL begin list\n")
         for client in self.clients:
             if not client.username: continue
             self.socket.send((client.username+"\n").encode("ascii"))
         self.socket.send(b"CTRL end list\n")
 
-    def QUIT(self,args:list[str]):
+    def QUIT(self,arg:str):
         self.server.active = False
         self.clients.remove(self.server)
 

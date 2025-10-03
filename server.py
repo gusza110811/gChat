@@ -1,6 +1,5 @@
 import socket
 import threading
-import shlex
 import commands
 
 HOST = "192.168.1.118"
@@ -36,12 +35,13 @@ class Server(threading.Thread):
         sock.send(b"NOTE LF used for this connection\n")
 
         while self.active:
-            command = shlex.split(sock.recv(512).decode())
+            command = sock.recv(512).decode()
+            name = command.split()[0]
             if not command:
                 continue
 
             try:
-                func = commands.mapping[command[0]]
+                func = commands.mapping[name]
             except KeyError:
                 sock.send(b"ERR Invalid Command\n")
             func(command)
