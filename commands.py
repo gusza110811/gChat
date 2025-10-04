@@ -17,7 +17,7 @@ class Commands:
 
     def MSG(self, arg:str):
         if not self.server.username:
-            self.socket.send(b"ERR No username\n")
+            self.socket.send(b"ERR Missing username\n")
             return
         for client in self.clients:
             client.recieve_message(arg,self.server.username)
@@ -31,7 +31,6 @@ class Commands:
 
     def QUIT(self,arg:str):
         self.server.active = False
-        self.clients.remove(self.server)
 
 if typing.TYPE_CHECKING:
     import socket, server

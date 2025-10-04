@@ -6,13 +6,15 @@ import json
 host = "localhost"
 port = 3000
 ipv6 = False
+maxClient = 16
 
 try:
-    with open(".cfg.json") as config:
+    with open("cfg.json") as config:
         configs =  json.load(config)
         host = configs["host"]
         port = configs["port"]
         ipv6 = configs["ipv6"]
+        maxClient = configs["maxClient"]
 except FileNotFoundError:
     pass
 if ipv6:
@@ -20,7 +22,7 @@ if ipv6:
 else:
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 sock.bind((host,port))
-sock.listen(8)
+sock.listen(maxClient)
 
 clients = []
 
@@ -39,9 +41,14 @@ class Server(threading.Thread):
         self.active = False
 
     def recieve_message(self, message, sender="*"):
-        self.socket.send(f"RECV {sender} : {message}\n".encode("ascii"))
+        try:
+            self.socket.send(f"RECV {sender} : {message}\n".encode("ascii"))
+        except BrokenPipeError:
+            return
 
     def run(self):
+        print(f"{self.address[0]} port {self.address[1]} Connected")
+
         self.active = True
         sock = self.socket
         commands = self.commands
@@ -50,7 +57,7 @@ class Server(threading.Thread):
         while self.active:
             command = sock.recv(512).decode()
             if not command:
-                continue
+                self.active = False
             name = command.split()[0]
             arg = command[len(name):].strip()
 
@@ -58,11 +65,12 @@ class Server(threading.Thread):
                 func = commands.mapping[name]
             except KeyError:
                 sock.send(b"ERR Invalid Command\n")
+                continue
             func(arg)
-        
+
+        self.clients.remove(self)
         sock.close()
-
-
+        print(f"{self.address[0]} port {self.address[1]} Disconnected")
 
 if __name__ == "__main__":
     while True:
