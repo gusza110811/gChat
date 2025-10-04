@@ -2,14 +2,13 @@ import socket
 import threading
 import commands
 import json
-from collections import deque
 
 host = "localhost"
 port = 3000
 ipv6 = False
 maxClient = 16
 
-messages:deque[tuple[str,str,str]] = []
+messages:list[tuple[str,str,str,str]] = []
 
 try:
     with open("cfg.json") as config:
@@ -46,7 +45,7 @@ class Server(threading.Thread):
 
     def recieve_message(self, message, channel, sender="*"):
         try:
-            self.socket.send(f"RECV {channel} : {sender} : {message}\n".encode("ascii"))
+            self.socket.send(f"RECV {channel} : {sender} : {message}\n".encode("utf-8"))
         except BrokenPipeError:
             return
 

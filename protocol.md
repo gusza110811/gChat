@@ -6,8 +6,8 @@
 | `JOIN [channel]` | Join a channel (no whitespace) |
 | `MSG [message]` | Send message |
 | `LIST` | Get list of active users |
-| `FETCH [?begin] [?end]` | Fetch message from `begin` to `end`, `end` will be latest message (0) if not provided, `begin` will be the first message if not provided |
-| `FETCHC [?begin] [?end]` | same as `FETCH` but filter for only current channel
+| `FETCH [?amount]` | Fetch `amount` latest messages, fetch all if not provided |
+| `FETCHC [?amount]` | same as `FETCH` but filter for only current channel |
 | `QUIT` | Stop connection |
 
 ## Server commands
