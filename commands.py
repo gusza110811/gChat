@@ -1,4 +1,6 @@
 import typing
+import time
+import datetime
 from collections import deque
 
 class Commands:
@@ -13,21 +15,28 @@ class Commands:
             "MSG": self.MSG,
             "LIST": self.LIST,
             "FETCH": self.FETCH,
+            "FETCHC": self.FETCHC,
             "QUIT": self.QUIT,
         }
 
     def NAME(self, arg:str):
-        self.server.username = arg.split()[0]
+        try:
+            self.server.username = arg.split()[0]
+        except IndexError:
+            self.socket.send(b"ERR No parameter")
 
     def JOIN(self, arg:str):
-        self.server.channel = arg.split()[0]
+        try:
+            self.server.channel = arg.split()[0]
+        except IndexError:
+            self.socket.send(b"ERR No parameter")
 
     def MSG(self, arg:str):
-        self.messages.append((self.server.channel,self.server.username,arg))
         if not self.server.username:
             self.socket.send(b"ERR Missing username\n")
             return
         for client in self.clients:
+            self.messages.append((datetime.datetime.fromtimestamp(time.time()).isoformat(),self.server.channel,self.server.username,arg))
             client.recieve_message(arg,self.server.channel,self.server.username)
 
     def LIST(self, arg:str):
@@ -42,7 +51,7 @@ class Commands:
             try:
                 begin = int(arg.split()[0])
             except IndexError:
-                begin = -1
+                begin = len(self.messages)
             try:
                 end = int(arg.split()[1])
             except IndexError:
@@ -52,7 +61,26 @@ class Commands:
         messages = self.messages[end:begin]
         self.socket.send(b"CTRL begin fetch\n")
         for message in messages:
-            self.socket.send(f"{message[0]} : {message[1]} : {message[2]}\n".encode("ascii"))
+            self.socket.send(f"{message[0]} : {message[1]} : {message[2]} : {message[3]}\n".encode("ascii"))
+        self.socket.send(b"CTRL end fetch\n")
+    def FETCHC(self, arg:str):
+        try:
+            try:
+                begin = int(arg.split()[0])
+            except IndexError:
+                begin = len(self.messages)
+            try:
+                end = int(arg.split()[1])
+            except IndexError:
+                end = 0
+        except ValueError:
+            self.socket.send(b"ERR Not an integer\n")
+        messages = self.messages[end:begin]
+        self.socket.send(b"CTRL begin fetch\n")
+        for message in messages:
+            if message[1] != self.server.channel:
+                continue
+            self.socket.send(f"{message[0]} : {message[1]} : {message[2]} : {message[3]}\n".encode("ascii"))
         self.socket.send(b"CTRL end fetch\n")
 
     def QUIT(self,arg:str):
