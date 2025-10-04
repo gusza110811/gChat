@@ -2,11 +2,14 @@ import socket
 import threading
 import commands
 import json
+from collections import deque
 
 host = "localhost"
 port = 3000
 ipv6 = False
 maxClient = 16
+
+messages:deque[tuple[str,str,str]] = []
 
 try:
     with open("cfg.json") as config:
@@ -30,19 +33,20 @@ class Server(threading.Thread):
     def __init__(self, sockt:tuple[socket.socket,tuple[str,int]]):
         self.socket, self.address = sockt
         global clients
-        self.commands = commands.Commands(self.socket,self, clients)
+        global messages
+        self.commands = commands.Commands(self.socket,self, clients, messages)
         self.clients = clients # list is mutable so umm
         self.clients.append(self)
         super().__init__(target=self.run,daemon=True)
 
         self.username = ""
-        self.channel = ""
+        self.channel = "all"
 
         self.active = False
 
-    def recieve_message(self, message, sender="*"):
+    def recieve_message(self, message, channel, sender="*"):
         try:
-            self.socket.send(f"RECV {sender} : {message}\n".encode("ascii"))
+            self.socket.send(f"RECV {channel} : {sender} : {message}\n".encode("ascii"))
         except BrokenPipeError:
             return
 
@@ -58,7 +62,10 @@ class Server(threading.Thread):
             command = sock.recv(512).decode()
             if not command:
                 self.active = False
-            name = command.split()[0]
+            try:
+                name = command.split()[0]
+            except IndexError:
+                continue
             arg = command[len(name):].strip()
 
             try:
