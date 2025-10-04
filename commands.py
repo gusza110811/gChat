@@ -23,13 +23,13 @@ class Commands:
         try:
             self.server.username = arg.split()[0]
         except IndexError:
-            self.socket.send(b"ERR No parameter")
+            self.socket.send(b"ERR No parameter\n")
 
     def JOIN(self, arg:str):
         try:
             self.server.channel = arg.split()[0]
         except IndexError:
-            self.socket.send(b"ERR No parameter")
+            self.socket.send(b"ERR No parameter\n")
 
     def MSG(self, arg:str):
         if not self.server.username:
