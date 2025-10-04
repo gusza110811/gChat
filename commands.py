@@ -39,14 +39,16 @@ class Commands:
     
     def FETCH(self, arg:str):
         try:
-            begin = int(arg.split()[0])
-        except IndexError:
-            self.socket.send(b"ERR Not enough parameters\n")
-            return
-        try:
-            end = int(arg.split()[1])
-        except IndexError:
-            end = 0
+            try:
+                begin = int(arg.split()[0])
+            except IndexError:
+                begin = -1
+            try:
+                end = int(arg.split()[1])
+            except IndexError:
+                end = 0
+        except ValueError:
+            self.socket.send(b"ERR Not an integer\n")
         messages = self.messages[end:begin]
         self.socket.send(b"CTRL begin fetch\n")
         for message in messages:
