@@ -4,7 +4,7 @@ import commands
 import json
 
 host = "localhost"
-port = 3000
+port = 3355
 ipv6 = False
 maxClient = 16
 
@@ -13,10 +13,12 @@ messages:list[tuple[str,str,str,str]] = []
 try:
     with open("cfg.json") as config:
         configs =  json.load(config)
-        host = configs["host"]
-        port = configs["port"]
-        ipv6 = configs["ipv6"]
+        host:str = configs["host"]
+        port:int = configs["port"]
         maxClient = configs["maxClient"]
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+        ipv6 = True
 except FileNotFoundError:
     pass
 if ipv6:
@@ -45,7 +47,7 @@ class Server(threading.Thread):
 
     def recieve_message(self, message, channel, sender="*"):
         try:
-            self.socket.send(f"RECV {channel} : {sender} : {message}\n".encode("utf-8"))
+            self.socket.send(f"RECV {channel} ; {sender} ; {message}\n".encode("utf-8"))
         except BrokenPipeError:
             return
 
@@ -70,7 +72,7 @@ class Server(threading.Thread):
             try:
                 func = commands.mapping[name]
             except KeyError:
-                sock.send(b"ERR Invalid Command\n")
+                sock.send(b"ERR InvalidCommand\n")
                 continue
             func(arg)
 

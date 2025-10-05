@@ -6,7 +6,7 @@
 | `JOIN [channel]` | Join a channel (no whitespace) |
 | `MSG [message]` | Send message |
 | `LIST` | Get list of active users |
-| `FETCH [?amount]` | Fetch `amount` latest messages, fetch all if not provided |
+| `FETCH [?amount]` | Fetch `amount` latest messages (newest first), fetch all if `amount` is not provided |
 | `FETCHC [?amount]` | same as `FETCH` but filter for only current channel |
 | `QUIT` | Stop connection |
 
