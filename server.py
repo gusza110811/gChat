@@ -59,22 +59,28 @@ class Server(threading.Thread):
         commands = self.commands
         sock.send(b"NOTE LF used for this connection\n")
 
+        buffer = ""
         while self.active:
-            command = sock.recv(512).decode()
-            if not command:
-                self.active = False
-            try:
-                name = command.split()[0]
-            except IndexError:
-                continue
-            arg = command[len(name):].strip()
+            data = sock.recv(512).decode("utf-8", errors="ignore")
+            if not data:
+                break
+            buffer += data
+            while "\n" in buffer:
+                line, buffer = buffer.split("\n", 1)
+                line = line.strip()
+                if not line:
+                    continue
 
-            try:
-                func = commands.mapping[name]
-            except KeyError:
-                sock.send(b"ERR InvalidCommand\n")
-                continue
-            func(arg)
+                name, *args = line.split(maxsplit=1)
+                arg = args[0] if args else ""
+
+                try:
+                    func = commands.mapping[name]
+                except KeyError:
+                    sock.send(b"ERR InvalidCommand\n")
+                    continue
+
+                func(arg)
 
         self.clients.remove(self)
         sock.close()
