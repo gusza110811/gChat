@@ -3,7 +3,6 @@ import tkinter
 import threading
 from tkinter import scrolledtext
 from collections import deque
-import json
 import time
 import datetime
 import shlex
@@ -62,44 +61,68 @@ class UI:
     def sendCommand(self,command:str,params:list):
         self.pendingOp.append((command,params))
 
-class App(threading.Thread):
-    def __init__(self, ui:UI, server:str, port=3355,name:str=None):
-        self.helpMSG = """/join : change channel
-/name : change name"""
-
-        super().__init__(target=self.listen,daemon=True)
+class App():
+    def __init__(self, ui:UI):
         self.ui = ui
+        self.helpMSG = """
+/help : show this message
+/join : change channel
+/name : change name
+/connect [server] : connect to a server
+/connect [server] [port] : connect to a server on a specific port
+/disconnect : leave a server
+"""
+        self.active = False
+        ui.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        self.socket:socket.socket
+
+        self.listenThread = threading.Thread(target=self.listen,daemon=True)
+
+        self.CTRLstat = None
+        ui.onSend = self.onSend
+
+        ui.sendCommand("print",["[INFO] Welcome to gChat Client!\n"])
+        ui.sendCommand("print",["[INFO] You can start by using /connect to connect to a server\n"])
+        ui.sendCommand("print",["[INFO] Use /name to set your name and you're all set to chat!\n"])
+        ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz!\n"])
+
+    def connect(self, server:str, port:int):
         self.active = True
-        if server.startswith("[") and server.endswith("]"):
-            server = server[1:-1]
-            self.socket = socket.socket(socket.AF_INET6,socket.SOCK_STREAM)
-        else:
-            self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.socket = socket.create_connection((server, port))
         sock = self.socket
-        sock.connect((server, port))
-        if name:
-            sock.send(f"NAME {name}\n".encode())
-        
+
         endlineNotice = sock.recv(128).decode().strip()
         if endlineNotice != "NOTE LF used for this connection":
             self.ui.sendCommand("print",["[WARNING] Protocol mismatch"])
         
         self.changeCh("all")
-        
-        ui.onSend = self.onSend
-        if name:
-            self.changeName(name)
-        ui.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.listenThread = threading.Thread(target=self.listen, daemon=True)
+        self.listenThread.start()
+    def disconnect(self):
+        self.changeName("None")
+        self.active = False
+        try:
+            self.socket.send(b"QUIT\n")
+            self.socket.close()
+        except Exception:
+            pass
+        self.ui.sendCommand("print",[f"[INFO] Disconnected"])
 
-        self.CTRLstat = None
-    
     def onSend(self, event, textvar:tkinter.Variable):
         message:str = textvar.get()
         textvar.set("")
         if not message.startswith("/"):
+            if not self.active:
+                self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
+                return
+
             self.socket.send(f"MSG {message}\n".encode())
             return
-        command, *params = shlex.split(message[1:])
+        self.handleCommand(message[1:])
+    
+    def handleCommand(self, prompt):
+        command, *params = shlex.split(prompt)
         if command == "join":
             try:
                 self.changeCh(params[0])
@@ -110,6 +133,29 @@ class App(threading.Thread):
                 self.changeName(params[0])
             except IndexError:
                 self.ui.sendCommand("print",["[ERROR] Please provide a name\n"])
+        elif command == "connect":
+            try:
+                server = params[0]
+            except IndexError:
+                self.ui.sendCommand("print",["[ERROR] please provide host name\n"])
+                return
+            try:
+                port = int(params[1])
+            except IndexError:
+                port = 3355
+            except ValueError:
+                self.ui.sendCommand("print",["[ERROR] Port must be a number\n"])
+            self.connect(server,port)
+        elif command == "disconnect":
+            if not self.active:
+                self.ui.sendCommand("print",["[WARN] Not connected\n"])
+                return
+
+            self.disconnect()
+        elif command == "help":
+            self.ui.sendCommand("print",[self.helpMSG])
+        else:
+            self.ui.sendCommand("print",["[ERROR] Invalid command, use /help for list of commands\n"])
     
     def fetch(self):
         self.socket.send(b"FETCHC 100\n")
@@ -118,80 +164,73 @@ class App(threading.Thread):
         self.ui.sendCommand("clear",[])
         channel = channel
         self.channel = channel
-        self.socket.send(f"JOIN {channel}".encode())
+        self.socket.send(f"JOIN {channel}\n".encode())
         self.fetch()
         self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
     
     def changeName(self,name:str):
-        ui.username.config(text=name)
-        self.socket.send(f"NAME {name}".encode())
+        self.ui.username.config(text=name)
+        if self.active:
+            self.socket.send(f"NAME {name}\n".encode())
 
     def listen(self):
         sock = self.socket
         while self.active:
-            response = sock.recv(1024)
-            lines = response.splitlines()
-            for line in lines:
-                if line.startswith(b"CTRL"):
-                    subcommand, ctrl, *junk = line[5:].decode().split()
-                    if ctrl == "fetch" and subcommand == "begin":
-                        self.CTRLstat = "fetch"
-                    elif ctrl == "list" and subcommand == "begin":
-                        self.CTRLstat = "list"
-                    elif subcommand == "end":
-                        self.CTRLstat = None
+            buffer = b""
+            while self.active:
+                try:
+                    chunk = sock.recv(1024)
+                except ConnectionResetError:
+                    self.ui.sendCommand("print",["[ERROR] Server closed the connection\n"])
+                    self.disconnect()
+                    break
+                if not chunk:
+                    break
+                buffer += chunk
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
+                    self.processLine(line)
+    def processLine(self,line:bytes):
+        if line.startswith(b"CTRL"):
+            subcommand, ctrl, *junk = line[5:].decode().split()
+            if ctrl == "fetch" and subcommand == "begin":
+                self.CTRLstat = "fetch"
+            elif ctrl == "list" and subcommand == "begin":
+                self.CTRLstat = "list"
+            elif subcommand == "end":
+                self.CTRLstat = None
 
-                elif line.startswith(b"RECV"):
-                    data = line.decode()[5:]
-                    channel, sender, *message = data.split(";")
-                    channel = channel.strip()
-                    sender = sender.strip()
-                    message = ";".join(message).strip()
-                    if channel == self.channel:
-                        self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}:{message}\n"])
-                elif line.startswith(b"ERR"):
-                    err = line.decode()[4:].split()[0]
-                    if err == "MissingUsername":
-                        self.ui.sendCommand("print",["[ERROR] No name provided, use /name to set your name\n"])
-                    self.ui.sendCommand("print",["[ERROR] "+line.decode()[4:]+"\n"])
-                elif self.CTRLstat == "fetch":
-                    timestamp, channel, sender, *message = line.strip().decode().split(";")
-                    timestamp = timestamp.strip()
-                    sender = sender.strip()
-                    message = ";".join(message).strip()
-                    self.ui.sendCommand("insert",[f"[{timestamp}] @{sender}:{message}\n"])
-                print(self.CTRLstat,line)
+        elif line.startswith(b"RECV"):
+            data = line.decode()[5:]
+            channel, sender, *message = data.split(";")
+            channel = channel.strip()
+            sender = sender.strip()
+            message = ";".join(message).strip()
+            if channel == self.channel:
+                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}:{message}\n"])
+        elif line.startswith(b"ERR"):
+            err = line.decode()[4:].split()[0]
+            if err == "MissingUsername":
+                self.ui.sendCommand("print",["[ERROR] No name provided, use /name to set your name\n"])
+            else:
+                # Generic/Unknown errors
+                self.ui.sendCommand("print",["[ERROR] "+line.decode()[4:]+"\n"])
+        elif self.CTRLstat == "fetch":
+            timestamp, channel, sender, *message = line.strip().decode().split(";")
+            timestamp = timestamp.strip()
+            sender = sender.strip()
+            message = ";".join(message).strip()
+            self.ui.sendCommand("insert",[f"[{timestamp}] @{sender}:{message}\n"])
+        print(line)
 
     def on_close(self):
-        self.active = False
         ui.running = False
-        try:
-            self.socket.send(b"QUIT\n")
-            self.socket.close()
-        except Exception:
-            pass
+        self.disconnect()
         self.ui.root.destroy()
 
 if __name__ == "__main__":
     ui = UI()
     server = "localhost"
-    port = 3355
-    name = None
-    try:
-        with open("cfg.json") as configFile:
-            config = json.load(configFile)
-            server = config["host"]
-            try:
-                port = config["port"]
-            except KeyError:
-                pass
-            try:
-                name = config["name"]
-            except KeyError:
-                pass
-    except FileNotFoundError:
-        pass
-    app = App(ui,server,port,name)
-    app.start()
+    app = App(ui)
 
     ui.loop()
