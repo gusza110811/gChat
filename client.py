@@ -100,13 +100,13 @@ class App():
         self.listenThread = threading.Thread(target=self.listen, daemon=True)
         self.listenThread.start()
     def disconnect(self):
-        self.changeName("None")
         self.active = False
         try:
             self.socket.send(b"QUIT\n")
             self.socket.close()
         except Exception:
             pass
+        self.changeName("None")
         self.ui.sendCommand("print",[f"[INFO] Disconnected"])
 
     def onSend(self, event, textvar:tkinter.Variable):
