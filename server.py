@@ -81,7 +81,12 @@ class Server(threading.Thread):
         print(f"{self.address[0]} port {self.address[1]} Disconnected")
 
 if __name__ == "__main__":
-    while True:
-        connection = sock.accept()
-        server = Server(connection)
-        server.start()
+    try:
+        while True:
+            connection = sock.accept()
+            server = Server(connection)
+            server.start()
+    except KeyboardInterrupt:
+        print("\n\nStopping")
+    finally:
+        print(messages)

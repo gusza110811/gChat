@@ -191,6 +191,7 @@ class App():
                     line, buffer = buffer.split(b"\n", 1)
                     self.processLine(line)
     def processLine(self,line:bytes):
+        print(line)
         if line.startswith(b"CTRL"):
             subcommand, ctrl, *junk = line[5:].decode().split()
             if ctrl == "fetch" and subcommand == "begin":
@@ -216,12 +217,15 @@ class App():
                 # Generic/Unknown errors
                 self.ui.sendCommand("print",["[ERROR] "+line.decode()[4:]+"\n"])
         elif self.CTRLstat == "fetch":
-            timestamp, channel, sender, *message = line.strip().decode().split(";")
+            try:
+                timestamp, channel, sender, *message = line.strip().decode().split(";")
+            except ValueError:
+                self.ui.sendCommand("print",["[INFO] Junk data found, please contact server owner"])
+                return
             timestamp = timestamp.strip()
             sender = sender.strip()
             message = ";".join(message).strip()
             self.ui.sendCommand("insert",[f"[{timestamp}] @{sender}:{message}\n"])
-        print(line)
 
     def on_close(self):
         ui.running = False
