@@ -20,7 +20,7 @@ class UI:
 
         self.chat = scrolledtext.ScrolledText(root)
         self.chat.config(state=tkinter.DISABLED)
-        self.chat.pack()
+        self.chat.pack(expand=True,fill="both")
 
         self.inputbar = tkinter.Frame(root)
         inputbar = self.inputbar
@@ -48,7 +48,7 @@ class UI:
                     self.chat.config(state=tkinter.NORMAL)
                     self.chat.insert(tkinter.END,params[0])
                     if wasAtBottom:
-                        self.chat.see(1.0)
+                        self.chat.see(tkinter.END)
                     self.chat.config(state=tkinter.DISABLED)
                 elif command == "insert":
                     self.chat.config(state=tkinter.NORMAL)
@@ -83,7 +83,7 @@ class App():
 
         self.socket:socket.socket
 
-        self.pingInterval = 30
+        self.pingInterval = 60
 
         self.listenThread = threading.Thread(target=self.listen,daemon=True)
 
@@ -247,7 +247,7 @@ class App():
             sender = sender.strip()
             message = ";".join(message).strip()
             if channel == self.channel:
-                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}:{message}\n"])
+                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"])
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
@@ -264,7 +264,7 @@ class App():
             timestamp = timestamp.strip()
             sender = sender.strip()
             message = ";".join(message).strip()
-            self.ui.sendCommand("insert",[f"[{timestamp}] @{sender}:{message}\n"])
+            self.ui.sendCommand("insert",[f"[{timestamp}] @{sender}: {message}\n"])
 
     def on_close(self):
         ui.running = False
