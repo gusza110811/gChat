@@ -106,7 +106,7 @@ class App():
             except BrokenPipeError:
                 self.ui.sendCommand("print",["[ERROR] Disconnected"])
                 self.disconnect()
-            time.sleep(7)
+            time.sleep(self.pingInterval)
 
     def connect(self, server:str, port:int):
         try:
@@ -120,10 +120,12 @@ class App():
         self.active = True
         sock = self.socket
 
+        sock.settimeout(self.pingInterval*1.01)
+
         endlineNotice = sock.recv(128).decode().strip()
         if endlineNotice != "NOTE LF used for this connection":
             self.ui.sendCommand("print",["[WARNING] Protocol mismatch"])
-        
+
         self.changeCh("all")
         self.listenThread = threading.Thread(target=self.listen, daemon=True)
         self.listenThread.start()
