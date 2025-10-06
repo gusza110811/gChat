@@ -44,17 +44,23 @@ class UI:
                 command = commandt[0]
                 params = commandt[1]
                 if command == "print":
+                    wasAtBottom = self.chat.yview()[1] > 0.99
                     self.chat.config(state=tkinter.NORMAL)
                     self.chat.insert(tkinter.END,params[0])
+                    if wasAtBottom:
+                        self.chat.see(1.0)
                     self.chat.config(state=tkinter.DISABLED)
                 elif command == "insert":
                     self.chat.config(state=tkinter.NORMAL)
                     self.chat.insert(1.0,params[0])
+                    self.chat.yview_scroll(1,"units")
                     self.chat.config(state=tkinter.DISABLED)
                 elif command == "clear":
                     self.chat.config(state=tkinter.NORMAL)
                     self.chat.delete(1.0,tkinter.END)
                     self.chat.config(state=tkinter.DISABLED)
+                elif command == "chname":
+                    self.username.config(text=params[0])
 
             self.root.update()
     
@@ -77,19 +83,41 @@ class App():
 
         self.socket:socket.socket
 
+        self.pingInterval = 30
+
         self.listenThread = threading.Thread(target=self.listen,daemon=True)
 
         self.CTRLstat = None
-        ui.onSend = self.onSend
+        def sending(event,textvar:tkinter.Variable):
+            message = textvar.get()
+            threading.Thread(target=lambda:self.onSend(event,message)).start()
+            textvar.set("")
+        ui.onSend = sending
 
         ui.sendCommand("print",["[INFO] Welcome to gChat Client!\n"])
         ui.sendCommand("print",["[INFO] You can start by using /connect to connect to a server\n"])
         ui.sendCommand("print",["[INFO] Use /name to set your name and you're all set to chat!\n"])
         ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz!\n"])
 
+    def keepAlive(self):
+        while self.active:
+            try:
+                self.socket.send(b"PING\n")
+            except BrokenPipeError:
+                self.ui.sendCommand("print",["[ERROR] Disconnected"])
+                self.disconnect()
+            time.sleep(7)
+
     def connect(self, server:str, port:int):
+        try:
+            self.socket = socket.create_connection((server, port),timeout=10)
+        except TimeoutError:
+            self.ui.sendCommand("print",[f"[ERROR] Failed to connect to {server} : Connection timed out\n"])
+            return
+        except socket.gaierror:
+            self.ui.sendCommand("print",[f"[ERROR] Unknown server\n"])
+            return
         self.active = True
-        self.socket = socket.create_connection((server, port))
         sock = self.socket
 
         endlineNotice = sock.recv(128).decode().strip()
@@ -99,25 +127,31 @@ class App():
         self.changeCh("all")
         self.listenThread = threading.Thread(target=self.listen, daemon=True)
         self.listenThread.start()
+        self.keepAliveThread = threading.Thread(target=self.keepAlive, daemon=True)
+        self.keepAliveThread.start()
     def disconnect(self):
         self.active = False
         try:
             self.socket.send(b"QUIT\n")
             self.socket.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(e)
         self.changeName("None")
         self.ui.sendCommand("print",[f"[INFO] Disconnected"])
 
-    def onSend(self, event, textvar:tkinter.Variable):
-        message:str = textvar.get()
-        textvar.set("")
+    def onSend(self, event, message:str):
         if not message.startswith("/"):
             if not self.active:
                 self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
                 return
-
-            self.socket.send(f"MSG {message}\n".encode())
+            try:
+                self.socket.send(f"MSG {message}\n".encode())
+            except BrokenPipeError:
+                self.ui.sendCommand("print",["[ERROR] Connection failed\n"])
+                self.disconnect()
+            except AttributeError:
+                self.active = False
+                self.ui.sendCommand("print",["[ERROR] Not connected\n"])
             return
         self.handleCommand(message[1:])
     
@@ -139,6 +173,7 @@ class App():
             except IndexError:
                 self.ui.sendCommand("print",["[ERROR] please provide host name\n"])
                 return
+            self.ui.sendCommand("print",[f"[INFO] Connecting to {server}\n"])
             try:
                 port = int(params[1])
             except IndexError:
@@ -169,7 +204,7 @@ class App():
         self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
     
     def changeName(self,name:str):
-        self.ui.username.config(text=name)
+        self.ui.sendCommand("chname",[name])
         if self.active:
             self.socket.send(f"NAME {name}\n".encode())
 

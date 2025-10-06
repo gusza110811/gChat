@@ -25,6 +25,7 @@ if ipv6:
     sock = socket.socket(socket.AF_INET6,socket.SOCK_STREAM)
 else:
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+print(host)
 sock.bind((host,port))
 sock.listen(maxClient)
 
@@ -58,29 +59,36 @@ class Server(threading.Thread):
         sock = self.socket
         commands = self.commands
         sock.send(b"NOTE LF used for this connection\n")
+        sock.settimeout(120.0)
 
         buffer = ""
-        while self.active:
-            data = sock.recv(512).decode("utf-8", errors="ignore")
-            if not data:
-                break
-            buffer += data
-            while "\n" in buffer:
-                line, buffer = buffer.split("\n", 1)
-                line = line.strip()
-                if not line:
-                    continue
-
-                name, *args = line.split(maxsplit=1)
-                arg = args[0] if args else ""
-
+        try:
+            while self.active:
                 try:
-                    func = commands.mapping[name]
-                except KeyError:
-                    sock.send(b"ERR InvalidCommand\n")
-                    continue
+                    data = sock.recv(512).decode("utf-8", errors="ignore")
+                except ConnectionResetError:
+                    break
+                if not data:
+                    break
+                buffer += data
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    line = line.strip()
+                    if not line:
+                        continue
 
-                func(arg)
+                    name, *args = line.split(maxsplit=1)
+                    arg = args[0] if args else ""
+
+                    try:
+                        func = commands.mapping[name]
+                    except KeyError:
+                        sock.send(b"ERR InvalidCommand\n")
+                        continue
+
+                    func(arg)
+        except TimeoutError:
+            pass
 
         self.clients.remove(self)
         sock.close()

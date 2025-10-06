@@ -15,6 +15,7 @@ class Commands:
             "LIST": self.LIST,
             "FETCH": self.FETCH,
             "FETCHC": self.FETCHC,
+            "PING": self.PING,
             "QUIT": self.QUIT,
 
             "GET": self.teapot,
@@ -79,6 +80,9 @@ class Commands:
                 f"{message[0]} ; {message[1]} ; {message[2]} ; {message[3]}\n".encode("utf-8")
             )
         self.socket.send(b"CTRL end fetch\n")
+    
+    def PING(self,arg:str):
+        self.socket.send(b"PONG\n")
 
     def QUIT(self,arg:str):
         self.server.active = False

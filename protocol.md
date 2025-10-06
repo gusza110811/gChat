@@ -1,28 +1,83 @@
-# The gChat protocol
-## Client commands
-| command | description |
-| --- | --- |
-| `NAME [name]` | Set user name (no whitespace) |
-| `JOIN [channel]` | Join a channel (no whitespace) |
-| `MSG [message]` | Send message |
-| `LIST` | Get list of active users |
-| `FETCH [?amount]` | Fetch `amount` latest messages (newest first), fetch all if `amount` is not provided |
-| `FETCHC [?amount]` | same as `FETCH` but filter for only current channel |
-| `QUIT` | Stop connection |
+# gChat Protocol Specification
 
-## Server commands
-| command | description |
-| --- | --- |
-| `NOTE [message]` | Generic information |
-| `CTRL [subcommand] [command]` | Control command, part of another command's output |
-| `ERR [message]` | Information on a failed command |
-| `RECV [channel] : [sender] : [message]` | Recieved message command |
+## Client Commands
 
-## Communication
-After connection has been established, the server must send `NOTE LF used for this connection` or `NOTE CRLF used for this connection` to infrom of the newline character used for communication
+| Command            | Description                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `NAME [name]`      | Sets the user's display name. Names cannot contain whitespace.                                                |
+| `JOIN [channel]`   | Joins a chat channel. Channel names cannot contain whitespace.                                                |
+| `MSG [message]`    | Sends a message to the current channel.                                                                       |
+| `LIST`             | Requests a list of active users.                                                                              |
+| `FETCH [?amount]`  | Retrieves the most recent messages (newest first). If no amount is given, all available messages are fetched. |
+| `FETCHC [?amount]` | Same as `FETCH`, but filters messages to the current channel only.                                            |
+| `QUIT`             | Disconnects from the server gracefully.                                                                       |
+| `PING`             | Keeps the connection alive. The server replies with `PONG`.                                                   |
 
-Once the client receives the newline character signal, the client can send `NAME [username]` with the user's choice of name in place of `username`
+## Server Commands
 
-After this handshake, double-sided chatting protocol can be initiated, the client can use `MSG` to send user's message and `JOIN` to change channel. client will receive `RECV` command from the server when any client sends a message.
+| Command                                 | Description                                                               |
+| --------------------------------------- | ----------------------------------------------------------------------    |
+| `NOTE [message]`                        | Sends general information or notifications.                               |
+| `CTRL [subcommand] [command]`           | Marks the start or end of a multi-line response (e.g., fetch or list).    |
+| `ERR [type] [?info]`                    | Reports an error. Optional `info` may provide more context.               |
+| `RECV [channel] ; [sender] ; [message]` | Indicates a received message from a client (including the current client).|
+| `PONG`                                  | Response to `PING`, indicating the connection is alive.                   |
 
-The client can finally send `QUIT` once they wish to stop communicating
+## Connection and Handshake
+
+Once a TCP connection is established, the server must send one of the following to indicate the line-ending convention used:
+
+* `NOTE LF used for this connection`
+* `NOTE CRLF used for this connection`
+
+After receiving this notice, the client must send:
+
+```
+NAME [username]
+```
+
+This initiates the handshake and sets the user's name.
+
+Once the handshake is complete, both sides can begin normal communication. The client may send `MSG` to broadcast messages or `JOIN` to switch channels. Incoming messages from any client are sent via the `RECV` command.
+
+When the user wishes to disconnect, the client should send `QUIT`.
+
+## Packet Structures
+
+### `FETCH` and `FETCHC` Responses
+
+```
+CTRL begin fetch
+[timestamp] ; [channel] ; [sender] ; [message]
+[timestamp] ; [channel] ; [sender] ; [message]
+...
+CTRL end fetch
+```
+
+### `LIST` Responses
+
+```
+CTRL begin list
+[name]
+[name]
+...
+CTRL end list
+```
+
+## Error Handling
+
+| Error             | Description                                                       |
+| ----------------- | ----------------------------------------------------------------- |
+| `InvalidCommand`  | The command sent was not recognized by the server.                |
+| `NoParameter`     | A required command parameter was missing.                         |
+| `MissingUsername` | The client attempted to send a message before setting a username. |
+
+Servers may define additional error codes, but all clients and servers must support these three standard types.
+
+## Connection Maintenance
+
+To maintain an active connection, clients must periodically send a `PING` command every **30–120 seconds**. The server must reply with `PONG` to confirm the connection remains active.
+
+If either side does not receive the expected `PING` or `PONG` within a reasonable timeframe, it should assume the connection is lost and act accordingly.
+
+Servers must wait at least **120 seconds** of inactivity before closing a connection due to timeout.
