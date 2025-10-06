@@ -8,7 +8,7 @@ port = 3355
 ipv6 = False
 maxClient = 16
 
-messages:list[tuple[str,str,str,str]] = []
+messages:list[tuple[int,str,str,str]] = []
 
 try:
     with open("cfg.json") as config:

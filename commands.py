@@ -1,6 +1,5 @@
 import typing
 import time
-import datetime
 
 class Commands:
     def __init__(self, socket:"socket.socket", server:"server.Server", clients:"list[server.Server]", messages:list[tuple[str,str,str,str]]):
@@ -38,7 +37,7 @@ class Commands:
         if not self.server.username:
             self.socket.send(b"ERR MissingUsername\n")
             return
-        self.messages.append((datetime.datetime.fromtimestamp(round(time.time())),self.server.channel,self.server.username,arg))
+        self.messages.append((round(time.time()),self.server.channel,self.server.username,arg))
         for client in self.clients:
             client.recieve_message(arg,self.server.channel,self.server.username)
 

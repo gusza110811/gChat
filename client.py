@@ -117,6 +117,9 @@ class App():
         except socket.gaierror:
             self.ui.sendCommand("print",[f"[ERROR] Unknown server\n"])
             return
+        except OSError:
+            self.ui.sendCommand("print",[f"[ERROR] Failed to connect\n"])
+            return
         self.active = True
         sock = self.socket
 
@@ -139,7 +142,7 @@ class App():
         except Exception as e:
             print(e)
         self.changeName("None")
-        self.ui.sendCommand("print",[f"[INFO] Disconnected"])
+        self.ui.sendCommand("print",[f"[INFO] Disconnected\n"])
 
     def onSend(self, event, message:str):
         if not message.startswith("/"):
@@ -247,7 +250,7 @@ class App():
             sender = sender.strip()
             message = ";".join(message).strip()
             if channel == self.channel:
-                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"])
+                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time())).astimezone()}] @{sender}: {message}\n"])
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
@@ -261,10 +264,10 @@ class App():
             except ValueError:
                 self.ui.sendCommand("print",["[INFO] Junk data found, please contact server owner"])
                 return
-            timestamp = timestamp.strip()
+            timestamp = int(timestamp.strip())
             sender = sender.strip()
             message = ";".join(message).strip()
-            self.ui.sendCommand("insert",[f"[{timestamp}] @{sender}: {message}\n"])
+            self.ui.sendCommand("insert",[f"[{datetime.datetime.fromtimestamp(timestamp).astimezone()}] @{sender}: {message}\n"])
 
     def on_close(self):
         ui.running = False
