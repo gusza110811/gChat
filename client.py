@@ -221,6 +221,8 @@ class App():
                     self.ui.sendCommand("print",["[ERROR] Server closed the connection\n"])
                     self.disconnect()
                     break
+                except OSError:
+                    break
                 if not chunk:
                     break
                 buffer += chunk
