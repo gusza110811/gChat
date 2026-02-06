@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import socket
 import threading
 import commands
@@ -16,12 +17,26 @@ try:
         host:str = configs["host"]
         port:int = configs["port"]
         maxClient = configs["maxClient"]
+        autoRestart:bool = configs["autoRestart"]
     if host.startswith("[") and host.endswith("]"):
         host = host[1:-1]
         ipv6 = True
+except KeyError:
+    print("Incomplete config file, using defaults")
 except FileNotFoundError:
-    pass
+    with open("cfg.json","w") as config:
+        configs = {
+            "host": host,
+            "port": port,
+            "maxClient": maxClient
+        }
+        json.dump(configs,config, indent=4)
 if ipv6:
+    if not socket.has_ipv6:
+        raise RuntimeError("IPv6 is not supported on this system")
+    if host == "auto":
+        # get public ip automatically
+        host = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET6)[0][4][0]
     sock = socket.socket(socket.AF_INET6,socket.SOCK_STREAM)
 else:
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -104,3 +119,8 @@ if __name__ == "__main__":
         print("\n\nStopping")
     finally:
         print(messages)
+    
+    if autoRestart:
+        print("Restarting server...")
+        import os,sys
+        os.execv(sys.executable, [sys.executable,__file__])

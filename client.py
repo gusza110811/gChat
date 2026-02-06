@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import socket
 import tkinter
 import threading
