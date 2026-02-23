@@ -84,7 +84,6 @@ class Client:
         self.chchan("all")
 
         while True:
-            while not self.pending_messages:pass
             while self.pending_messages:
                 print(self.pending_messages.pop(0), end="")
             msg = input(f"Sending as {name}: ").strip()
