@@ -97,6 +97,7 @@ class Client:
                 self.fetch()
             else:
                 self.socket.sendall(b"MSG " + msg.encode('utf-8') + b'\n')
+                while not self.pending_messages:pass
     
     def chchan(self, channel):
         self.channel = channel

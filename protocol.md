@@ -25,7 +25,7 @@
 
 ## Connection and Handshake
 
-Once a TCP connection is established, the server must send one of the following to indicate the line-ending convention used:
+Once a TCP connection is established, the server must send one of the following to indicate the line-ending convention used (case insensitive):
 
 * `NOTE LF used for this connection`
 * `NOTE CRLF used for this connection`

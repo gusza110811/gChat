@@ -3,6 +3,7 @@ import socket
 import threading
 import commands
 import json
+import os
 
 host = "localhost"
 port = 3355
@@ -110,6 +111,11 @@ class Server(threading.Thread):
         print(f"{self.address[0]} port {self.address[1]} Disconnected")
 
 if __name__ == "__main__":
+    filedir = os.path.dirname(__file__)
+
+    if os.path.isfile(os.path.join(filedir,".msg.json")):
+        with open(os.path.join(filedir,".msg.json"),"r") as msg:
+            messages = json.load(msg)
     try:
         while True:
             connection = sock.accept()
@@ -120,6 +126,9 @@ if __name__ == "__main__":
     finally:
         print(messages)
     
+    with open(os.path.join(filedir,".msg.json"),"w") as msg:
+        json.dump(messages,msg)
+
     if autoRestart:
         print("Restarting server...")
         import os,sys

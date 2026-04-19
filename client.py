@@ -71,6 +71,7 @@ class UI:
 class App():
     def __init__(self, ui:UI):
         self.ui = ui
+        self.name = None
         self.helpMSG = """
 /help : show this message
 /join : change channel
@@ -98,6 +99,7 @@ class App():
         ui.sendCommand("print",["[INFO] Welcome to gChat Client!\n"])
         ui.sendCommand("print",["[INFO] You can start by using /connect to connect to a server\n"])
         ui.sendCommand("print",["[INFO] Use /name to set your name and you're all set to chat!\n"])
+        ui.sendCommand("print",["[INFO] Use /help for more info\n"])
         ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz!\n"])
 
     def keepAlive(self):
@@ -127,8 +129,11 @@ class App():
         sock.settimeout(self.pingInterval*1.01)
 
         endlineNotice = sock.recv(128).decode().strip()
-        if endlineNotice != "NOTE LF used for this connection":
+        if endlineNotice.lower() != "note lf used for this connection":
             self.ui.sendCommand("print",["[WARNING] Protocol mismatch"])
+        
+        if self.name:
+            self.changeName(self.name)
 
         self.changeCh("all")
         self.listenThread = threading.Thread(target=self.listen, daemon=True)
@@ -142,7 +147,6 @@ class App():
             self.socket.close()
         except Exception as e:
             print(e)
-        self.changeName("None")
         self.ui.sendCommand("print",[f"[INFO] Disconnected\n"])
 
     def onSend(self, event, message:str):
@@ -210,7 +214,9 @@ class App():
         self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
     
     def changeName(self,name:str):
+        self.name = name
         self.ui.sendCommand("chname",[name])
+        self.ui.sendCommand("print", [f"[INFO] Name set to {name}\n"])
         if self.active:
             self.socket.send(f"NAME {name}\n".encode())
 
@@ -251,7 +257,7 @@ class App():
             sender = sender.strip()
             message = ";".join(message).strip()
             if channel == self.channel:
-                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time())).astimezone()}] @{sender}: {message}\n"])
+                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"])
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
@@ -268,7 +274,7 @@ class App():
             timestamp = int(timestamp.strip())
             sender = sender.strip()
             message = ";".join(message).strip()
-            self.ui.sendCommand("insert",[f"[{datetime.datetime.fromtimestamp(timestamp).astimezone()}] @{sender}: {message}\n"])
+            self.ui.sendCommand("insert",[f"[{datetime.datetime.fromtimestamp(timestamp)}] @{sender}: {message}\n"])
 
     def on_close(self):
         ui.running = False
