@@ -14,16 +14,14 @@ messages:list[tuple[int,str,str,str]] = []
 
 try:
     with open("cfg.json") as config:
-        configs =  json.load(config)
-        host:str = configs["host"]
-        port:int = configs["port"]
-        maxClient = configs["maxClient"]
-        autoRestart:bool = configs["autoRestart"]
+        configs:dict =  json.load(config)
+        host:str = configs.get("host","localhost")
+        port:int = configs.get("port",3355)
+        maxClient = configs.get("maxClient",16)
+        autoRestart:bool = configs.get("autoRestart",False)
     if host.startswith("[") and host.endswith("]"):
         host = host[1:-1]
         ipv6 = True
-except KeyError:
-    print("Incomplete config file, using defaults")
 except FileNotFoundError:
     with open("cfg.json","w") as config:
         configs = {
