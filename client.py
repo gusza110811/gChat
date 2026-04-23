@@ -76,6 +76,7 @@ class App():
 /help : show this message
 /join : change channel
 /name : change name
+/list : list active users
 /connect [server] : connect to a server
 /connect [server] [port] : connect to a server on a specific port
 /disconnect : leave a server
@@ -84,6 +85,8 @@ class App():
         ui.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.socket:socket.socket
+
+        self.msgFormat = 1
 
         self.pingInterval = 60
 
@@ -97,10 +100,10 @@ class App():
         ui.onSend = sending
 
         ui.sendCommand("print",["[INFO] Welcome to gChat Client!\n"])
-        ui.sendCommand("print",["[INFO] You can start by using /connect to connect to a server\n"])
-        ui.sendCommand("print",["[INFO] Use /name to set your name and you're all set to chat!\n"])
+        ui.sendCommand("print",["[INFO] Use /name to set your name\n"])
+        ui.sendCommand("print",["[INFO] Use /connect to connect to a server\n"])
         ui.sendCommand("print",["[INFO] Use /help for more info\n"])
-        ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz!\n"])
+        ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz\n"])
 
     def keepAlive(self):
         while self.active:
@@ -197,6 +200,19 @@ class App():
                 return
 
             self.disconnect()
+        elif command == "list":
+            if not self.active:
+                self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
+                return
+            try:
+                self.ui.sendCommand("print",["[INFO] User list:\n"])
+                self.socket.send(b"LIST\n")
+            except BrokenPipeError:
+                self.ui.sendCommand("print",["[ERROR] Connection failed\n"])
+                self.disconnect()
+            except AttributeError:
+                self.active = False
+                self.ui.sendCommand("print",["[ERROR] Not connected\n"])
         elif command == "help":
             self.ui.sendCommand("print",[self.helpMSG])
         else:
@@ -206,6 +222,9 @@ class App():
         self.socket.send(b"FETCHC 100\n")
     
     def changeCh(self,channel:str):
+        if not self.active:
+            self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
+            return
         self.ui.sendCommand("clear",[])
         channel = channel
         self.channel = channel
@@ -257,7 +276,11 @@ class App():
             sender = sender.strip()
             message = ";".join(message).strip()
             if channel == self.channel:
-                self.ui.sendCommand("print",[f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"])
+                if self.msgFormat == 0:
+                    msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"
+                elif self.msgFormat == 1:
+                    msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
+                self.ui.sendCommand("print",[msg])
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
@@ -274,7 +297,16 @@ class App():
             timestamp = int(timestamp.strip())
             sender = sender.strip()
             message = ";".join(message).strip()
-            self.ui.sendCommand("insert",[f"[{datetime.datetime.fromtimestamp(timestamp)}] @{sender}: {message}\n"])
+            if self.msgFormat == 0:
+                msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"
+            elif self.msgFormat == 1:
+                msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
+            else:
+                msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
+            self.ui.sendCommand("insert",[msg])
+        elif self.CTRLstat == "list":
+            name = line.strip().decode()
+            self.ui.sendCommand("print",[f"[INFO] {name}\n"])
 
     def on_close(self):
         ui.running = False

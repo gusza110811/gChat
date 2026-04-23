@@ -14,7 +14,7 @@ maxClient = 16
 
 messages:list[tuple[int,str,str,str]] = []
 
-clients = []
+clients:list["Server"] = []
 
 class Server(threading.Thread):
     def __init__(self, sockt:tuple[socket.socket,tuple[str,int]]):
@@ -74,6 +74,9 @@ class Server(threading.Thread):
                     func(arg)
         except TimeoutError:
             pass
+        if self.username:
+            for client in self.clients:
+                client.recieve_message(f"left the server",self.channel,self.username)
 
         self.clients.remove(self)
         sock.close()

@@ -32,11 +32,20 @@ class Commands:
             self.socket.send(b"ERR NoParameter\n")
 
     def JOIN(self, arg:str):
-        try:
-            self.server.channel = arg.split()[0]
-            print(f"[{self.uid}] {(self.server.username or '')} joined {self.server.channel}")
-        except IndexError:
+        if len(arg.split()) == 0:
             self.socket.send(b"ERR NoParameter\n")
+            return
+        target_channel = arg.split()[0]
+        if target_channel == self.server.channel:
+            return
+        if self.server.username:
+            for client in self.clients:
+                client.recieve_message("left the channel",self.server.channel,self.server.username)
+        self.server.channel = target_channel
+        print(f"[{self.uid}] {(self.server.username or '')} joined {self.server.channel}")
+        if self.server.username:
+            for client in self.clients:
+                client.recieve_message("joined the channel",self.server.channel,self.server.username)
 
     def MSG(self, arg:str):
         if not self.server.username:
