@@ -1,4 +1,5 @@
 .*
 !/.gitignore
+!/.dockerignore
 __pycache__
 cfg.json

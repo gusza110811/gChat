@@ -3,7 +3,9 @@ import socket
 import threading
 import commands
 import json
-import os
+import os, sys
+import atexit
+import signal
 
 host = "localhost"
 port = 3355
@@ -18,7 +20,6 @@ try:
         host:str = configs.get("host","localhost")
         port:int = configs.get("port",3355)
         maxClient = configs.get("maxClient",16)
-        autoRestart:bool = configs.get("autoRestart",False)
     if host.startswith("[") and host.endswith("]"):
         host = host[1:-1]
         ipv6 = True
@@ -108,12 +109,22 @@ class Server(threading.Thread):
         sock.close()
         print(f"{self.address[0]} port {self.address[1]} Disconnected")
 
+def exit_handler(path):
+    print(messages)
+    with open(path,"w") as msg:
+        print(f"Saving messages to {path}")
+        json.dump(messages,msg)
+    sys.exit(0)
+
 if __name__ == "__main__":
     filedir = os.path.dirname(__file__)
 
     message_save_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(filedir,".msg.json")
+    print(message_save_path)
+    signal.signal(signal.SIGTERM, lambda signum, frame: exit_handler(message_save_path))
 
     if os.path.isfile(message_save_path):
+        print(f"Loading messages from {message_save_path}")
         with open(message_save_path,"r") as msg:
             messages = json.load(msg)
     try:
@@ -123,13 +134,3 @@ if __name__ == "__main__":
             server.start()
     except KeyboardInterrupt:
         print("\n\nStopping")
-    finally:
-        print(messages)
-    
-    with open(message_save_path,"w") as msg:
-        json.dump(messages,msg)
-
-    if autoRestart:
-        print("Restarting server...")
-        import os,sys
-        os.execv(sys.executable, [sys.executable,__file__])
