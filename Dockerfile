@@ -13,6 +13,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# Server Configuration
+ENV GCHAT_HOST="0.0.0.0"
+ENV GCHAT_PORT="3355"
+ENV GCHAT_MAX_CLIENT="256"
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
@@ -34,10 +39,9 @@ USER appuser
 # Copy the source code into the container.
 COPY ./server.py ./server.py
 COPY ./commands.py ./commands.py
-COPY ./cfg.json ./cfg.json
 
 # Expose the port that the application listens on.
 EXPOSE 3355
 
 # Run the application.
-CMD ["python3", "server.py", "/app/var/messages.json"]
+CMD ["python3", "server.py", "--messages", "/app/var/messages.json", "--env"]

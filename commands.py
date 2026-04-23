@@ -1,8 +1,10 @@
 import typing
 import time, datetime
+import random
 
 class Commands:
     def __init__(self, socket:"socket.socket", server:"server.Server", clients:"list[server.Server]", messages:list[tuple[str,str,str,str]]):
+        self.uid = random.randint(0,65535)
         self.socket = socket
         self.server = server
         self.address = server.address
@@ -25,14 +27,14 @@ class Commands:
     def NAME(self, arg:str):
         try:
             self.server.username = arg.split()[0]
-            print(f"{self.address[0]} is now {self.server.username}")
+            print(f"[{self.uid}] {self.address[0]} port {self.address[1]} is now {self.server.username}")
         except IndexError:
             self.socket.send(b"ERR NoParameter\n")
 
     def JOIN(self, arg:str):
         try:
             self.server.channel = arg.split()[0]
-            print((self.server.username or "unnamed") + f" joined {self.server.channel}")
+            print(f"[{self.uid}] {(self.server.username or '')} joined {self.server.channel}")
         except IndexError:
             self.socket.send(b"ERR NoParameter\n")
 
@@ -40,13 +42,13 @@ class Commands:
         if not self.server.username:
             self.socket.send(b"ERR MissingUsername\n")
             return
-        print(f"{datetime.datetime.fromtimestamp(round(time.time()))} #{self.server.channel} <{self.server.username}> {arg}")
+        print(f"[{self.uid}] {datetime.datetime.fromtimestamp(round(time.time()))} #{self.server.channel} <{self.server.username}> {arg}")
         self.messages.append((round(time.time()),self.server.channel,self.server.username,arg))
         for client in self.clients:
             client.recieve_message(arg,self.server.channel,self.server.username)
 
     def LIST(self, arg:str):
-        print((self.server.username or "unnamed") + " requested list")
+        print(f"[{self.uid}] {(self.server.username or '')} requested list")
         self.socket.send(b"CTRL begin list\n")
         for client in self.clients:
             if not client.username: continue
@@ -59,7 +61,7 @@ class Commands:
         except (IndexError, ValueError):
             n = len(self.messages)  # default: all
         
-        print((self.server.username or "unnamed") + " requested {n} messages")
+        print(f"[{self.uid}] {(self.server.username or '')} requested {n} messages")
 
         messages = self.messages[-n:].copy()  # get last n
         messages.reverse()
@@ -78,7 +80,7 @@ class Commands:
 
         messages = self.messages[-n:].copy()  # get last n
         messages.reverse()
-        print((self.server.username or "unnamed") + f" requested {n} messages in {self.server.channel}")
+        print(f"[{self.uid}] {(self.server.username or '')} requested {n} messages in {self.server.channel}")
         self.socket.send(b"CTRL begin fetch\n")
         for message in messages:
             if message[1] != self.server.channel:
@@ -89,15 +91,15 @@ class Commands:
         self.socket.send(b"CTRL end fetch\n")
     
     def PING(self,arg:str):
-        print((self.server.username or "unnamed") + " sent PING")
+        print(f"[{self.uid}] {(self.server.username or '')} sent PING")
         self.socket.send(b"PONG\n")
 
     def QUIT(self,arg:str):
-        print((self.server.username or "unnamed") + " requested to disconnect")
+        print(f"[{self.uid}] {(self.server.username or '')} requested to disconnect")
         self.server.active = False
 
     def teapot(self,arg:str):
-        print(f"{self.address[0]} (\"{self.server.username}\") attempted to use http command")
+        print(f"[{self.uid}] {(self.server.username or '')} attempted to use http command")
         self.socket.send(b"ERR I'm a teapot!\n")
 
 if typing.TYPE_CHECKING:
