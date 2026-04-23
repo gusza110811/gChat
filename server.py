@@ -111,8 +111,10 @@ class Server(threading.Thread):
 if __name__ == "__main__":
     filedir = os.path.dirname(__file__)
 
-    if os.path.isfile(os.path.join(filedir,".msg.json")):
-        with open(os.path.join(filedir,".msg.json"),"r") as msg:
+    message_save_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(filedir,".msg.json")
+
+    if os.path.isfile(message_save_path):
+        with open(message_save_path,"r") as msg:
             messages = json.load(msg)
     try:
         while True:
@@ -124,7 +126,7 @@ if __name__ == "__main__":
     finally:
         print(messages)
     
-    with open(os.path.join(filedir,".msg.json"),"w") as msg:
+    with open(message_save_path,"w") as msg:
         json.dump(messages,msg)
 
     if autoRestart:
