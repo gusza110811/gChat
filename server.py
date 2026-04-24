@@ -73,10 +73,9 @@ class Server(threading.Thread):
                     name, *args = line.split(maxsplit=1)
                     arg = args[0] if args else ""
 
-                    try:
-                        func = commands.mapping[name]
-                    except KeyError:
-                        sock.send(b"ERR InvalidCommand\n")
+                    func = commands.mapping.get(name)
+                    if not func:
+                        sock.send(b"ERR BadCommand InvalidCommand\n")
                         continue
 
                     func(arg)

@@ -10,7 +10,11 @@ import shlex
 import difflib
 import asyncio
 import desktop_notifier
-import dns.resolver
+try:
+    import dns.resolver
+    SRV_enabled = True
+except:
+    SRV_enabled = False
 
 class UI:
 
@@ -127,11 +131,18 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             time.sleep(self.pingInterval)
     
     def resolve(self, server:str, fallbackPort:int):
+        global SRV_enabled
+
+        if not SRV_enabled:
+            ui.sendCommand("print",["[INFO] SRV record resolution not supported\n"])
+            ui.sendCommand("print",["[INFO] Please install dnspython\n"])
+            return server, fallbackPort
+
         try:
             answers = dns.resolver.resolve(f"_gchat._tcp.{server}", "SRV")
             record = answers[0]  # simple case
             return str(record.target).rstrip("."), record.port
-        except dns.resolver.NXDOMAIN:
+        except Exception:
             return server, fallbackPort  # fallback
 
     def connect(self, server:str, port:int):

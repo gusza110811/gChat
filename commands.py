@@ -45,11 +45,11 @@ class Commands:
             self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
             print(f"[{self.uid}] " + (f"{oldname} is now" if oldname else "New user") + f" {self.server.username}")
         except IndexError:
-            self.socket.send(b"ERR NoParameter\n")
+            self.socket.send(b"ERR BadCommand NoParameter\n")
 
     def JOIN(self, arg:str):
         if len(arg.split()) == 0:
-            self.socket.send(b"ERR NoParameter\n")
+            self.socket.send(b"ERR BadCommand NoParameter\n")
             return
         target_channel = arg.split()[0]
         if target_channel == self.server.channel:

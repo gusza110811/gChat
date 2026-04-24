@@ -25,8 +25,11 @@
 
 ## Connection and Handshake
 
-Once a TCP connection is established, the server must send one of the following to indicate the line-ending convention used:
+Once a TCP connection is established, the client must send one `PING` to start communication
 
+Then server must send connection info:
+
+The ending sequenced used
 * `NOTE LINE_END = LF`
 * `NOTE LINE_END = CRLF`
 
@@ -73,9 +76,14 @@ CTRL end list
 
 | Error | Description |
 | --- | --- |
+| `BadCommand` | Command sent by the client is malformed |
+| `Rejected` | The server rejected the client's request |
+
+- `BadCommand` suberror types
+| Suberror | Description |
+| --- | --- |
 | `InvalidCommand` | The command sent was not recognized by the server. |
 | `NoParameter` | A required command parameter was missing. |
-| `Rejected` | The server rejected the client's request |
 
 - `Rejected` suberror types
 | Suberror | Description |
