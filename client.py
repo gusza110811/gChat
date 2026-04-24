@@ -310,9 +310,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                 self.mention(sender, channel, message)
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
-            if err == "MissingUsername":
-                self.ui.sendCommand("print",["[ERROR] No name provided, use /name to set your name\n"])
-            elif err == "Rejected":
+            if err == "Rejected":
                 suberr = line.decode()[4:].split()[1] if len(line.decode().split()) > 1 else ""
                 if suberr == "InvalidUsername":
                     self.preferredName = None

@@ -64,9 +64,6 @@ class Commands:
                 client.recieve_message("joined the channel",self.server.channel,self.server.username)
 
     def MSG(self, arg:str):
-        if not self.server.username:
-            self.socket.send(b"ERR MissingUsername\n")
-            return
         print(f"[{self.uid}] {datetime.datetime.fromtimestamp(round(time.time()))} #{self.server.channel} <{self.server.username}> {arg}")
         self.messages.append((round(time.time()),self.server.channel,self.server.username,arg))
         for client in self.clients:
