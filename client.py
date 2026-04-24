@@ -10,6 +10,7 @@ import shlex
 import difflib
 import asyncio
 import desktop_notifier
+import dns.resolver
 
 class UI:
 
@@ -124,8 +125,18 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                 self.ui.sendCommand("print",["[ERROR] Disconnected"])
                 self.disconnect()
             time.sleep(self.pingInterval)
+    
+    def resolve(self, server:str, fallbackPort:int):
+        try:
+            answers = dns.resolver.resolve(f"_gchat._tcp.{server}", "SRV")
+            record = answers[0]  # simple case
+            return str(record.target).rstrip("."), record.port
+        except dns.resolver.NXDOMAIN:
+            return server, fallbackPort  # fallback
 
     def connect(self, server:str, port:int):
+        server, port = self.resolve(server,port)
+        print(server,port)
         try:
             self.socket = socket.create_connection((server, port),timeout=10)
         except TimeoutError:
