@@ -58,7 +58,8 @@ class Server(threading.Thread):
         sock.send(b"NOTE LINE_END = LF\n")
         sock.send(b"NOTE CH = all\n")
         sock.send(f"NOTE NAME = {self.username}\n".encode("utf-8"))
-        print(f"[{self.uid}] {(self.username or '')} just joined")
+        for client in self.clients:
+            client.recieve_message("just joined",self.channel,self.username)
         try:
             while self.active:
                 try:
