@@ -28,11 +28,11 @@ class Commands:
         try:
             newname = arg.split()[0]
             if ";" in newname:
-                self.socket.send(b"ERR InvalidUsername\n")
+                self.socket.send(b"ERR Rejected InvalidUsername\n")
                 return
             for client in self.clients:
                 if client.username == newname:
-                    self.socket.send(b"ERR UsernameTaken\n")
+                    self.socket.send(b"ERR Rejected UsernameTaken\n")
                     return
             oldname = self.server.username
             self.server.username = newname
@@ -49,7 +49,7 @@ class Commands:
         if target_channel == self.server.channel:
             return
         if ";" in target_channel:
-            self.socket.send(b"ERR InvalidChannel\n")
+            self.socket.send(b"ERR Rejected InvalidChannel\n")
             return
         if self.server.username:
             for client in self.clients:
@@ -131,7 +131,7 @@ class Commands:
 
     def teapot(self,arg:str):
         print(f"[{self.uid}] {(self.server.username or '')} attempted to use http command")
-        self.socket.send(b"ERR I'm a teapot!\n")
+        self.socket.send(b"ERR Rejected I'm a teapot!\n")
 
 if typing.TYPE_CHECKING:
     import socket, server

@@ -278,12 +278,18 @@ class App():
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
                 self.ui.sendCommand("print",["[ERROR] No name provided, use /name to set your name\n"])
-            elif err == "InvalidUsername":
-                self.ui.sendCommand("print",["[ERROR] Invalid username\n"])
-            elif err == "UsernameTaken":
-                self.ui.sendCommand("print",["[ERROR] Username already taken\n"])
-            elif err == "InvalidChannel":
-                self.ui.sendCommand("print",["[ERROR] Invalid channel name\n"])
+            elif err == "Rejected":
+                suberr = line.decode()[4:].split()[1] if len(line.decode().split()) > 1 else ""
+                if suberr == "InvalidUsername":
+                    self.name = None
+                    self.ui.sendCommand("chname",["None"])
+                    self.ui.sendCommand("print",["[ERROR] Invalid username\n"])
+                elif suberr == "UsernameTaken":
+                    self.name = None
+                    self.ui.sendCommand("print",["[ERROR] Username already taken\n"])
+                    self.ui.sendCommand("chname",["None"])
+                elif suberr == "InvalidChannel":
+                    self.ui.sendCommand("print",["[ERROR] Invalid channel name\n"])
             else:
                 # Generic/Unknown errors
                 self.ui.sendCommand("print",["[ERROR] "+line.decode()[4:]+"\n"])
