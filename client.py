@@ -7,6 +7,7 @@ from collections import deque
 import time
 import datetime
 import shlex
+import difflib
 
 class UI:
 
@@ -84,6 +85,8 @@ class App():
 /connect [server] : connect to a server
 /connect [server] [port] : connect to a server on a specific port
 /disconnect : leave a server
+
+commands are fuzzy matched, so for example `conn` will work for `connect`
 """
         self.active = False
         ui.root.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -169,6 +172,12 @@ class App():
     
     def handleCommand(self, prompt):
         command, *params = shlex.split(prompt)
+        command = difflib.get_close_matches(command, ["join", "whereami", "whoami", "name", "connect", "disconnect", "list", "help"], n=1, cutoff=0.6)
+        if not command:
+            self.ui.sendCommand("print",["[ERROR] Invalid command, use /help for list of commands\n"])
+            return
+        command = command[0]
+        self.ui.sendCommand("print",[f"[COMMAND] /{command} {' '.join(params)}\n"])
         if command == "join":
             try:
                 self.changeCh(params[0])

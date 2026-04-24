@@ -2,26 +2,26 @@
 
 ## Client Commands
 
-| Command            | Description                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `NAME [name]`      | Sets the user's display name. Names cannot contain whitespace.                                                |
-| `JOIN [channel]`   | Joins a chat channel. Channel names cannot contain whitespace.                                                |
-| `MSG [message]`    | Sends a message to the current channel.                                                                       |
-| `LIST`             | Requests a list of active users.                                                                              |
-| `FETCH [?amount]`  | Retrieves the most recent messages (newest first). If no amount is given, all available messages are fetched. |
-| `FETCHC [?amount]` | Same as `FETCH`, but filters messages to the current channel only.                                            |
-| `QUIT`             | Disconnects from the server gracefully.                                                                       |
-| `PING`             | Keeps the connection alive. The server replies with `PONG`.                                                   |
+| Command | Description |
+| --- | --- |
+| `NAME [name]` | Sets the user's display name. Names cannot contain whitespace. |
+| `JOIN [channel]` | Joins a chat channel. Channel names cannot contain whitespace. |
+| `MSG [message]` | Sends a message to the current channel. |
+| `LIST` | Requests a list of active users. |
+| `FETCH [?amount]` | Retrieves the most recent messages (newest first). If no amount is given, all available messages are fetched. |
+| `FETCHC [?amount]` | Same as `FETCH`, but filters messages to the current channel only. |
+| `QUIT` | Disconnects from the server gracefully.|
+| `PING` | Keeps the connection alive. The server replies with `PONG`. |
 
 ## Server Commands
 
-| Command                                 | Description                                                               |
-| --------------------------------------- | ----------------------------------------------------------------------    |
-| `NOTE [variable] = [value]`             | Sends information or notification                                         |
-| `CTRL [subcommand] [command]`           | Marks the start or end of a multi-line response (e.g., fetch or list).    |
-| `ERR [type] [?info]`                    | Reports an error. Optional `info` may provide more context.               |
-| `RECV [channel] ; [sender] ; [message]` | Indicates a received message from a client (including the current client).|
-| `PONG`                                  | Response to `PING`, indicating the connection is alive.                   |
+| Command | Description |
+| --- | --- |
+| `NOTE [key] = [value]` | Sends information or notification |
+| `CTRL [subcommand] [command]` | Marks the start or end of a multi-line response (e.g., fetch or list). |
+| `ERR [type] [subtype*] [?info]` | Reports an error. Optional `info` may provide more context.|
+| `RECV [channel] ; [sender] ; [message]` | Indicates a received message from a client (including the current client). |
+| `PONG` | Response to `PING`, indicating the connection is alive. |
 
 ## Connection and Handshake
 
@@ -30,18 +30,13 @@ Once a TCP connection is established, the server must send one of the following 
 * `NOTE LINE_END = LF`
 * `NOTE LINE_END = CRLF`
 
-And the channel the user is currently in:
+The channel the user is currently in
 * eg. `NOTE CH = all`
 
-After receiving this notice, the client must send:
+The default username given to user
+* eg. `NOTE NAME = anon-42069`
 
-```
-NAME [username]
-```
-
-This initiates the handshake and sets the user's name.
-
-Once the handshake is complete, both sides can begin normal communication. The client may send `MSG` to broadcast messages or `JOIN` to switch channels. Incoming messages from any client are sent via the `RECV` command.
+The client may send `MSG` to broadcast messages or `JOIN` to switch channels. Incoming messages from any client are sent via the `RECV` command.
 
 When the user wishes to disconnect, the client should send `QUIT`.
 
@@ -67,24 +62,24 @@ CTRL begin list
 CTRL end list
 ```
 
-### Other usage of `NOTE`
-- The user's current channel after successful `JOIN`
-    - ex. `NOTE CH = all`
-- The user's current username after successful `NAME`
-    - ex. `NOTE NAME = Alice`
+## `NOTE` Command
+| Key | Description |
+| --- | --- |
+| `LINE_END` | Indicates the line-ending convention used by the server (`LF` or `CRLF` case insensitive). |
+| `CH` | Indicates the current channel the user is in. |
+| `NAME` | Indicates the default username assigned to the user by the server. |
 
 ## Error Handling
 
-| Error             | Description                                                       |
-| ----------------- | ----------------------------------------------------------------- |
-| `InvalidCommand`  | The command sent was not recognized by the server.                |
-| `NoParameter`     | A required command parameter was missing.                         |
-| `MissingUsername` | The client attempted to send a message before setting a username. |
-| `Rejected`        | The server rejected the client's request                          |
+| Error | Description |
+| --- | --- |
+| `InvalidCommand` | The command sent was not recognized by the server. |
+| `NoParameter` | A required command parameter was missing. |
+| `Rejected` | The server rejected the client's request |
 
 - `Rejected` suberror types
-| Suberror          | Description                                                       |
-| ----------------- | ----------------------------------------------------------------- |
+| Suberror | Description |
+| --- | --- |
 | `InvalidUsername` | The username provided is invalid (e.g., contains ';') |
 | `UsernameTaken` | The username provided is already in use by another client. |
 | `InvalidChannel` | The channel name provided is invalid (e.g., contains ';') |
