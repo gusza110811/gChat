@@ -80,9 +80,9 @@ CTRL end list
 | `InvalidCommand`  | The command sent was not recognized by the server.                |
 | `NoParameter`     | A required command parameter was missing.                         |
 | `MissingUsername` | The client attempted to send a message before setting a username. |
-| `Rejected`        | The server rejected the client's request (e.g., illegal character).|
+| `Rejected`        | The server rejected the client's request                          |
 
-Servers may define additional error codes, but all clients and servers must support these three standard types.
+Servers may define additional error codes, but all clients and servers must support these standard types.
 
 ## Connection Maintenance
 
