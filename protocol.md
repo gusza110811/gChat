@@ -82,6 +82,14 @@ CTRL end list
 | `MissingUsername` | The client attempted to send a message before setting a username. |
 | `Rejected`        | The server rejected the client's request                          |
 
+- `Rejected` suberror types
+| Suberror          | Description                                                       |
+| ----------------- | ----------------------------------------------------------------- |
+| `InvalidUsername` | The username provided is invalid (e.g., contains ';') |
+| `UsernameTaken` | The username provided is already in use by another client. |
+| `InvalidChannel` | The channel name provided is invalid (e.g., contains ';') |
+| `Unauthorized` | A plugin unauthorized the client's request (e.g., due to rate-limiting or other rules) |
+
 Servers may define additional error codes, but all clients and servers must support these standard types.
 
 ## Connection Maintenance

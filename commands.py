@@ -30,6 +30,10 @@ class Commands:
             if ";" in newname:
                 self.socket.send(b"ERR InvalidUsername\n")
                 return
+            for client in self.clients:
+                if client.username == newname:
+                    self.socket.send(b"ERR UsernameTaken\n")
+                    return
             oldname = self.server.username
             self.server.username = newname
             self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
@@ -43,6 +47,9 @@ class Commands:
             return
         target_channel = arg.split()[0]
         if target_channel == self.server.channel:
+            return
+        if ";" in target_channel:
+            self.socket.send(b"ERR InvalidChannel\n")
             return
         if self.server.username:
             for client in self.clients:
