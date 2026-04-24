@@ -6,6 +6,7 @@ import json
 import os, sys
 import argparse
 import signal
+import random
 
 host = "localhost"
 port = 3355
@@ -21,15 +22,22 @@ class Server(threading.Thread):
         self.socket, self.address = sockt
         global clients
         global messages
-        self.commands = commands.Commands(self.socket,self, clients, messages)
         self.clients = clients # list is mutable so umm
         self.clients.append(self)
         super().__init__(target=self.run,daemon=True)
+        self.uid = None
 
-        self.username = ""
+        uid = random.randint(0,65535)
+        while any(client.uid == uid for client in clients):
+            uid = random.randint(0,65535)
+        self.uid = uid
+
+        self.username = f"anon-{self.uid}"
         self.channel = "all"
 
         self.active = False
+
+        self.commands = commands.Commands(self.socket,self, clients, messages)
 
     def recieve_message(self, message, channel, sender="*"):
         try:
@@ -48,6 +56,7 @@ class Server(threading.Thread):
         buffer = ""
         sock.send(b"NOTE LINE_END = LF\n")
         sock.send(b"NOTE CH = all\n")
+        sock.send(f"NOTE NAME = {self.username}\n".encode("utf-8"))
         try:
             while self.active:
                 try:

@@ -71,11 +71,15 @@ class UI:
 class App():
     def __init__(self, ui:UI):
         self.ui = ui
-        self.name = None
+        self.preferredName = ""
+        self.currentName = ""
+        self.channel = ""
         self.helpMSG = """
 /help : show this message
 /join : change channel
 /name : change name
+/whereami : show current channel
+/whoami : show current name
 /list : list active users
 /connect [server] : connect to a server
 /connect [server] [port] : connect to a server on a specific port
@@ -136,8 +140,8 @@ class App():
         self.keepAliveThread = threading.Thread(target=self.keepAlive, daemon=True)
         self.keepAliveThread.start()
 
-        if self.name:
-            self.changeName(self.name)
+        if self.preferredName:
+            self.changeName(self.preferredName)
     def disconnect(self):
         self.active = False
         try:
@@ -170,11 +174,23 @@ class App():
                 self.changeCh(params[0])
             except IndexError:
                 self.ui.sendCommand("print",["[ERROR] Please provide a channel\n"])
+        elif command == "whereami":
+            if not self.active:
+                self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
+                return
+            self.ui.sendCommand("print",[f"[INFO] You are in {self.channel}\n"])
+        elif command == "whoami":
+            if not self.active:
+                self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
+                return
+            self.ui.sendCommand("print",[f"[INFO] Your name is {self.currentName}\n"])
         elif command == "name":
-            try:
+            if params:
                 self.changeName(params[0])
-            except IndexError:
-                self.ui.sendCommand("print",["[ERROR] Please provide a name\n"])
+            else:
+                self.preferredName = ""
+                self.ui.sendCommand("print",[f"[INFO] Preferred name reset\n"])
+                self.ui.sendCommand("print",[f"[INFO] Server name is {self.server.username}\n"])
         elif command == "connect":
             try:
                 server = params[0]
@@ -229,8 +245,8 @@ class App():
     def changeName(self,name:str):
         if self.active:
             self.socket.send(f"NAME {name}\n".encode())
-        self.name = name
-        self.ui.sendCommand("chname",[name])
+        self.preferredName = name
+        self.ui.sendCommand("print",[f"[INFO] Preferred name set to {name}\n"])
 
     def listen(self):
         sock = self.socket
@@ -281,11 +297,11 @@ class App():
             elif err == "Rejected":
                 suberr = line.decode()[4:].split()[1] if len(line.decode().split()) > 1 else ""
                 if suberr == "InvalidUsername":
-                    self.name = None
+                    self.preferredName = None
                     self.ui.sendCommand("chname",["None"])
                     self.ui.sendCommand("print",["[ERROR] Invalid username\n"])
                 elif suberr == "UsernameTaken":
-                    self.name = None
+                    self.preferredName = None
                     self.ui.sendCommand("print",["[ERROR] Username already taken\n"])
                     self.ui.sendCommand("chname",["None"])
                 elif suberr == "InvalidChannel":
@@ -297,15 +313,15 @@ class App():
             note = line.decode()[5:].split("=")[0].strip()
             if note == "NAME":
                 name = line.decode().split("=",1)[1].strip()
-                self.name = name
+                self.currentName = name
                 self.ui.sendCommand("chname",[name])
             elif note == "CH":
-                print('a')
                 channel = line.decode().split("=",1)[1].strip()
                 self.channel = channel
                 self.ui.sendCommand("clear",[])
                 self.fetch()
                 self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
+                self.ui.sendCommand("print", ["[INFO] Use /help for list of commands\n"])
             elif note == "LINE_END":
                 format = line.decode().split("=",1)[1].strip().lower()
                 if format == "lf":

@@ -1,10 +1,8 @@
 import typing
 import time, datetime
-import random
 
 class Commands:
     def __init__(self, socket:"socket.socket", server:"server.Server", clients:"list[server.Server]", messages:list[tuple[str,str,str,str]]):
-        self.uid = random.randint(0,65535)
         self.socket = socket
         self.server = server
         self.address = server.address
@@ -23,11 +21,15 @@ class Commands:
             "GET": self.teapot,
             "HEAD": self.teapot,
         }
+        self.uid = server.uid
 
     def NAME(self, arg:str):
         try:
             newname = arg.split()[0]
             if ";" in newname:
+                self.socket.send(b"ERR Rejected InvalidUsername\n")
+                return
+            if newname.startswith("anon-"):
                 self.socket.send(b"ERR Rejected InvalidUsername\n")
                 return
             for client in self.clients:
