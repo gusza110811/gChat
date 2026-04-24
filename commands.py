@@ -139,7 +139,7 @@ class Commands:
 
     def teapot(self,arg:str):
         print(f"[{self.uid}] {(self.server.username or '')} attempted to use http command")
-        message = """this is not a website
+        message = """this is not a website<br>
 <a href=\"https://github.com/gusza110811/gChat\">get the client</a>"""
         self.socket.send(f"HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nContent-Length: {len(message)}\r\nConnection: close\r\n\r\n".encode() + message.encode())
         self.server.active = False
