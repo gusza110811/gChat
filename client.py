@@ -8,8 +8,8 @@ import time
 import datetime
 import shlex
 import difflib
-import playsound3
-import os
+import asyncio
+import desktop_notifier
 
 class UI:
 
@@ -101,6 +101,8 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
 
         self.listenThread = threading.Thread(target=self.listen,daemon=True)
 
+        self.notifier = desktop_notifier.DesktopNotifier("gChat Client")
+
         self.CTRLstat = None
         def sending(event,textvar:tkinter.Variable):
             message = textvar.get()
@@ -155,6 +157,9 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         except Exception as e:
             print(e)
         self.ui.sendCommand("print",[f"[INFO] Disconnected\n"])
+    
+    def mention(self, sender:str, channel:str, message:str):
+        asyncio.run(self.notifier.send("gChat Mention", f"You were mentioned by {sender} in {channel}", timeout=5))
 
     def onSend(self, event, message:str):
         if not message.startswith("/"):
@@ -302,7 +307,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                     msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
                 self.ui.sendCommand("print",[msg])
             if self.currentName in message:
-                playsound3.playsound(os.path.dirname(os.path.realpath(__file__))+"/notif.mp3", block=False)
+                self.mention(sender, channel, message)
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
