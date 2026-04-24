@@ -26,8 +26,14 @@ class Commands:
 
     def NAME(self, arg:str):
         try:
-            self.server.username = arg.split()[0]
-            print(f"[{self.uid}] {self.address[0]} port {self.address[1]} is now {self.server.username}")
+            newname = arg.split()[0]
+            if ";" in newname:
+                self.socket.send(b"ERR InvalidUsername\n")
+                return
+            oldname = self.server.username
+            self.server.username = newname
+            self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
+            print(f"[{self.uid}] " + (f"{oldname} is now" if oldname else "New user") + f" {self.server.username}")
         except IndexError:
             self.socket.send(b"ERR NoParameter\n")
 
@@ -42,6 +48,7 @@ class Commands:
             for client in self.clients:
                 client.recieve_message("left the channel",self.server.channel,self.server.username)
         self.server.channel = target_channel
+        self.socket.send(f"NOTE CH = {self.server.channel}\n".encode("utf-8"))
         print(f"[{self.uid}] {(self.server.username or '')} joined {self.server.channel}")
         if self.server.username:
             for client in self.clients:
@@ -72,13 +79,18 @@ class Commands:
         
         print(f"[{self.uid}] {(self.server.username or '')} requested {n} messages")
 
-        messages = self.messages[-n:].copy()  # get last n
+        messages = self.messages.copy()
         messages.reverse()
         self.socket.send(b"CTRL begin fetch\n")
-        for message in messages:
+        count = 0
+        while count < n and messages:
+            message = messages.pop(0)
+            if message[1] != self.server.channel:
+                continue
             self.socket.send(
                 f"{message[0]} ; {message[1]} ; {message[2]} ; {message[3]}\n".encode("utf-8")
             )
+            count += 1
         self.socket.send(b"CTRL end fetch\n")
 
     def FETCHC(self, arg:str):
@@ -87,16 +99,19 @@ class Commands:
         except (IndexError, ValueError):
             n = len(self.messages)  # default: all
 
-        messages = self.messages[-n:].copy()  # get last n
+        messages = self.messages.copy()
         messages.reverse()
         print(f"[{self.uid}] {(self.server.username or '')} requested {n} messages in {self.server.channel}")
         self.socket.send(b"CTRL begin fetch\n")
-        for message in messages:
+        count = 0
+        while count < n and messages:
+            message = messages.pop(0)
             if message[1] != self.server.channel:
                 continue
             self.socket.send(
                 f"{message[0]} ; {message[1]} ; {message[2]} ; {message[3]}\n".encode("utf-8")
             )
+            count += 1
         self.socket.send(b"CTRL end fetch\n")
     
     def PING(self,arg:str):

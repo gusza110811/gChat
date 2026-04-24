@@ -17,7 +17,7 @@
 
 | Command                                 | Description                                                               |
 | --------------------------------------- | ----------------------------------------------------------------------    |
-| `NOTE [message]`                        | Sends general information or notifications.                               |
+| `NOTE [variable] = [value]`             | Sends information or notification                                         |
 | `CTRL [subcommand] [command]`           | Marks the start or end of a multi-line response (e.g., fetch or list).    |
 | `ERR [type] [?info]`                    | Reports an error. Optional `info` may provide more context.               |
 | `RECV [channel] ; [sender] ; [message]` | Indicates a received message from a client (including the current client).|
@@ -25,10 +25,13 @@
 
 ## Connection and Handshake
 
-Once a TCP connection is established, the server must send one of the following to indicate the line-ending convention used (case insensitive):
+Once a TCP connection is established, the server must send one of the following to indicate the line-ending convention used:
 
-* `NOTE LF used for this connection`
-* `NOTE CRLF used for this connection`
+* `NOTE LINE_END = LF`
+* `NOTE LINE_END = CRLF`
+
+And the channel the user is currently in:
+* eg. `NOTE CH = all`
 
 After receiving this notice, the client must send:
 
@@ -64,6 +67,12 @@ CTRL begin list
 CTRL end list
 ```
 
+### Other usage of `NOTE`
+- The user's current channel after successful `JOIN`
+    - ex. `NOTE CH = all`
+- The user's current username after successful `NAME`
+    - ex. `NOTE NAME = Alice`
+
 ## Error Handling
 
 | Error             | Description                                                       |
@@ -71,6 +80,7 @@ CTRL end list
 | `InvalidCommand`  | The command sent was not recognized by the server.                |
 | `NoParameter`     | A required command parameter was missing.                         |
 | `MissingUsername` | The client attempted to send a message before setting a username. |
+| `Rejected`        | The server rejected the client's request (e.g., illegal character).|
 
 Servers may define additional error codes, but all clients and servers must support these three standard types.
 

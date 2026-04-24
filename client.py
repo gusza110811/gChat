@@ -131,18 +131,13 @@ class App():
 
         sock.settimeout(self.pingInterval*1.01)
 
-        endlineNotice = sock.recv(128).decode().strip()
-        if endlineNotice.lower() != "note lf used for this connection":
-            self.ui.sendCommand("print",["[WARNING] Protocol mismatch"])
-        
-        if self.name:
-            self.changeName(self.name)
-
-        self.changeCh("all")
         self.listenThread = threading.Thread(target=self.listen, daemon=True)
         self.listenThread.start()
         self.keepAliveThread = threading.Thread(target=self.keepAlive, daemon=True)
         self.keepAliveThread.start()
+
+        if self.name:
+            self.changeName(self.name)
     def disconnect(self):
         self.active = False
         try:
@@ -225,19 +220,17 @@ class App():
         if not self.active:
             self.ui.sendCommand("print",["[ERROR] Not connected to a server\n"])
             return
-        self.ui.sendCommand("clear",[])
-        channel = channel
-        self.channel = channel
+        #self.ui.sendCommand("clear",[])
+        #self.channel = channel
         self.socket.send(f"JOIN {channel}\n".encode())
-        self.fetch()
-        self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
+        #self.fetch()
+        #self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
     
     def changeName(self,name:str):
-        self.name = name
-        self.ui.sendCommand("chname",[name])
-        self.ui.sendCommand("print", [f"[INFO] Name set to {name}\n"])
         if self.active:
             self.socket.send(f"NAME {name}\n".encode())
+        self.name = name
+        self.ui.sendCommand("chname",[name])
 
     def listen(self):
         sock = self.socket
@@ -285,9 +278,31 @@ class App():
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
                 self.ui.sendCommand("print",["[ERROR] No name provided, use /name to set your name\n"])
+            elif err == "InvalidUsername":
+                self.ui.sendCommand("print",["[ERROR] Invalid username\n"])
             else:
                 # Generic/Unknown errors
                 self.ui.sendCommand("print",["[ERROR] "+line.decode()[4:]+"\n"])
+        elif line.startswith(b"NOTE"):
+            note = line.decode()[5:].split("=")[0].strip()
+            if note == "NAME":
+                name = line.decode().split("=",1)[1].strip()
+                self.name = name
+                self.ui.sendCommand("chname",[name])
+            elif note == "CH":
+                print('a')
+                channel = line.decode().split("=",1)[1].strip()
+                self.channel = channel
+                self.ui.sendCommand("clear",[])
+                self.fetch()
+                self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
+            elif note == "LINE_END":
+                format = line.decode().split("=",1)[1].strip().lower()
+                if format == "lf":
+                    pass
+                else:
+                    self.ui.sendCommand("print",["[WARNING] Protocol mismatch\n"])
+                    self.ui.sendCommand("print",[f"[INFO] Server uses {format}\n"])
         elif self.CTRLstat == "fetch":
             try:
                 timestamp, channel, sender, *message = line.strip().decode().split(";")

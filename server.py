@@ -43,10 +43,11 @@ class Server(threading.Thread):
         self.active = True
         sock = self.socket
         commands = self.commands
-        sock.send(b"NOTE LF used for this connection\n")
         sock.settimeout(120.0)
 
         buffer = ""
+        sock.send(b"NOTE LINE_END = LF\n")
+        sock.send(b"NOTE CH = all\n")
         try:
             while self.active:
                 try:
