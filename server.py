@@ -46,7 +46,8 @@ class Server(threading.Thread):
             return
 
     def run(self):
-        print(f"{self.address[0]} port {self.address[1]} Connected")
+        print(f"[{self.uid}] {self.username} Connected")
+        print(f"[{self.uid}] Address: {self.address[0]} port {self.address[1]}")
 
         self.active = True
         sock = self.socket
@@ -90,7 +91,7 @@ class Server(threading.Thread):
 
         self.clients.remove(self)
         sock.close()
-        print(f"{self.address[0]} port {self.address[1]} Disconnected")
+        print(f"[{self.uid}] {self.username} Disconnected")
 
 def exit_handler(path):
     print(messages)
