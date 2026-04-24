@@ -55,11 +55,6 @@ class Server(threading.Thread):
         sock.settimeout(120.0)
 
         buffer = ""
-        sock.send(b"NOTE LINE_END = LF\n")
-        sock.send(b"NOTE CH = all\n")
-        sock.send(f"NOTE NAME = {self.username}\n".encode("utf-8"))
-        for client in self.clients:
-            client.recieve_message("just joined",self.channel,self.username)
         try:
             while self.active:
                 try:
@@ -69,7 +64,7 @@ class Server(threading.Thread):
                 if not data:
                     break
                 buffer += data
-                while "\n" in buffer:
+                while "\n" in buffer and self.active:
                     line, buffer = buffer.split("\n", 1)
                     line = line.strip()
                     if not line:

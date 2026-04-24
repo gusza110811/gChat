@@ -19,9 +19,11 @@ class Commands:
             "QUIT": self.QUIT,
 
             "GET": self.teapot,
+            "POST": self.teapot,
             "HEAD": self.teapot,
         }
         self.uid = server.uid
+        self.pinged = False
 
     def NAME(self, arg:str):
         try:
@@ -38,6 +40,8 @@ class Commands:
                     return
             oldname = self.server.username
             self.server.username = newname
+            for client in self.clients:
+                client.recieve_message(f"is now {newname}",self.server.channel,oldname)
             self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
             print(f"[{self.uid}] " + (f"{oldname} is now" if oldname else "New user") + f" {self.server.username}")
         except IndexError:
@@ -59,9 +63,8 @@ class Commands:
         self.server.channel = target_channel
         self.socket.send(f"NOTE CH = {self.server.channel}\n".encode("utf-8"))
         print(f"[{self.uid}] {(self.server.username or '')} joined {self.server.channel}")
-        if self.server.username:
-            for client in self.clients:
-                client.recieve_message("joined the channel",self.server.channel,self.server.username)
+        for client in self.clients:
+            client.recieve_message("joined the channel",self.server.channel,self.server.username)
 
     def MSG(self, arg:str):
         print(f"[{self.uid}] {datetime.datetime.fromtimestamp(round(time.time()))} #{self.server.channel} <{self.server.username}> {arg}")
@@ -91,8 +94,6 @@ class Commands:
         count = 0
         while count < n and messages:
             message = messages.pop(0)
-            if message[1] != self.server.channel:
-                continue
             self.socket.send(
                 f"{message[0]} ; {message[1]} ; {message[2]} ; {message[3]}\n".encode("utf-8")
             )
@@ -121,6 +122,14 @@ class Commands:
         self.socket.send(b"CTRL end fetch\n")
     
     def PING(self,arg:str):
+        if not self.pinged:
+            self.socket.send(b"NOTE LINE_END = LF\n")
+            self.socket.send(b"NOTE CH = all\n")
+            self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
+            for client in self.clients:
+                client.recieve_message("just joined",self.server.channel,self.server.username)
+            self.pinged = False
+
         print(f"[{self.uid}] {(self.server.username or '')} sent PING")
         self.socket.send(b"PONG\n")
 
@@ -130,7 +139,10 @@ class Commands:
 
     def teapot(self,arg:str):
         print(f"[{self.uid}] {(self.server.username or '')} attempted to use http command")
-        self.socket.send(b"ERR Rejected I'm a teapot!\n")
+        message = """this is not a website
+<a href=\"https://github.com/gusza110811/gChat\">get the client</a>"""
+        self.socket.send(f"HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nContent-Length: {len(message)}\r\nConnection: close\r\n\r\n".encode() + message.encode())
+        self.server.active = False
 
 if typing.TYPE_CHECKING:
     import socket, server
