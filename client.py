@@ -8,6 +8,8 @@ import time
 import datetime
 import shlex
 import difflib
+import playsound3
+import os
 
 class UI:
 
@@ -299,6 +301,8 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                 elif self.msgFormat == 1:
                     msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
                 self.ui.sendCommand("print",[msg])
+            if self.currentName in message:
+                playsound3.playsound(os.path.dirname(os.path.realpath(__file__))+"/notif.mp3", block=False)
         elif line.startswith(b"ERR"):
             err = line.decode()[4:].split()[0]
             if err == "MissingUsername":
