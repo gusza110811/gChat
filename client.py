@@ -185,7 +185,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             self.ui.sendCommand("chname",["None"])
     
     def mention(self, sender:str, channel:str, message:str):
-        self.ui.sendCommand("print",[f"[NOTIF] You were mentioned by {sender} in {channel}"])
+        self.ui.sendCommand("print",[f"[NOTIF] You were mentioned by {sender} in {channel}\n"])
         asyncio.run(self.notifier.send("gChat Mention", f"You were mentioned by {sender} in {channel}", timeout=5))
 
     def onSend(self, event, message:str):
