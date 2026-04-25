@@ -87,7 +87,7 @@ class Server(threading.Thread):
 
         self.clients.remove(self)
         sock.close()
-        print(f"[{self.uid}] {self.username} Disconnected")
+        print(f"[{self.uid}] {self.username} Disconnected" + " (timed out)" if self.active else "")
 
 def exit_handler(path):
     print(messages)
