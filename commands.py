@@ -39,6 +39,8 @@ class Commands:
                     self.socket.send(b"ERR Rejected UsernameTaken\n")
                     return
             oldname = self.server.username
+            if oldname == newname:
+                return
             self.server.username = newname
             for client in self.clients:
                 client.recieve_message(f"is now {newname}",self.server.channel,oldname)
