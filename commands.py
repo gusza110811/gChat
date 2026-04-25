@@ -128,7 +128,7 @@ class Commands:
             self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
             for client in self.clients:
                 client.recieve_message("just joined",self.server.channel,self.server.username)
-            self.pinged = False
+            self.pinged = True
 
         print(f"[{self.uid}] {(self.server.username or '')} sent PING")
         self.socket.send(b"PONG\n")
