@@ -179,6 +179,10 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         except Exception as e:
             print(e)
         self.ui.sendCommand("print",[f"[INFO] Disconnected\n"])
+        if self.preferredName:
+            self.ui.sendCommand("chname",[f"({self.preferredName})"])
+        else:
+            self.ui.sendCommand("chname",["None"])
     
     def mention(self, sender:str, channel:str, message:str):
         asyncio.run(self.notifier.send("gChat Mention", f"You were mentioned by {sender} in {channel}", timeout=5))
@@ -228,7 +232,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             else:
                 self.preferredName = ""
                 self.ui.sendCommand("print",[f"[INFO] Preferred name reset\n"])
-                self.ui.sendCommand("print",[f"[INFO] Server name is {self.server.username}\n"])
+                self.ui.sendCommand("print",[f"[INFO] Server name is {self.currentName}\n"])
         elif command == "connect":
             try:
                 server = params[0]
@@ -284,7 +288,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         if self.active:
             self.socket.send(f"NAME {name}\n".encode())
         self.preferredName = name
-        self.ui.sendCommand("print",[f"[INFO] Preferred name set to {name}\n"])
+        self.ui.sendCommand("chname",["(" + self.preferredName + ")"])
 
     def listen(self):
         sock = self.socket
@@ -335,13 +339,11 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             if err == "Rejected":
                 suberr = line.decode()[4:].split()[1] if len(line.decode().split()) > 1 else ""
                 if suberr == "InvalidUsername":
-                    self.preferredName = None
-                    self.ui.sendCommand("chname",["None"])
+                    self.ui.sendCommand("chname",[f"{self.currentName} ({self.preferredName})"])
                     self.ui.sendCommand("print",["[ERROR] Invalid username\n"])
                 elif suberr == "UsernameTaken":
-                    self.preferredName = None
                     self.ui.sendCommand("print",["[ERROR] Username already taken\n"])
-                    self.ui.sendCommand("chname",["None"])
+                    self.ui.sendCommand("chname",[f"{self.currentName} ({self.preferredName})"])
                 elif suberr == "InvalidChannel":
                     self.ui.sendCommand("print",["[ERROR] Invalid channel name\n"])
             else:
@@ -353,6 +355,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                 name = line.decode().split("=",1)[1].strip()
                 self.currentName = name
                 self.ui.sendCommand("chname",[name])
+                self.ui.sendCommand("print",[f"[INFO] You are now {self.currentName}\n"])
             elif note == "CH":
                 channel = line.decode().split("=",1)[1].strip()
                 self.channel = channel
@@ -366,12 +369,12 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                     pass
                 else:
                     self.ui.sendCommand("print",["[WARNING] Protocol mismatch\n"])
-                    self.ui.sendCommand("print",[f"[INFO] Server uses {format}\n"])
+                    self.ui.sendCommand("print",[f"[WARNING] Server uses {format}\n"])
         elif self.CTRLstat == "fetch":
             try:
                 timestamp, channel, sender, *message = line.strip().decode().split(";")
             except ValueError:
-                self.ui.sendCommand("print",["[INFO] Junk data found, please contact server owner"])
+                self.ui.sendCommand("print",["[INFO] Junk data found, please contact server owner\n"])
                 return
             timestamp = int(timestamp.strip())
             sender = sender.strip()
