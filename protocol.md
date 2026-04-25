@@ -46,6 +46,7 @@ When the user wishes to disconnect, the client should send `QUIT`.
 ## Packet Structures
 
 ### `FETCH` and `FETCHC` Responses
+**Newest message first**
 
 ```
 CTRL begin fetch
