@@ -356,14 +356,12 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
                 name = line.decode().split("=",1)[1].strip()
                 self.currentName = name
                 self.ui.sendCommand("chname",[name])
-                self.ui.sendCommand("print",[f"[INFO] You are now {self.currentName}\n"])
             elif note == "CH":
                 channel = line.decode().split("=",1)[1].strip()
                 self.channel = channel
                 self.ui.sendCommand("clear",[])
                 self.fetch()
                 self.ui.sendCommand("print", [f"[INFO] Now talking in {channel}\n"])
-                self.ui.sendCommand("print", ["[INFO] Use /help for list of commands\n"])
             elif note == "LINE_END":
                 format = line.decode().split("=",1)[1].strip().lower()
                 if format == "lf":
