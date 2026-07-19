@@ -1,5 +1,4 @@
 # gChat Protocol Reference Implementation
+GNU was not involved in this
 
 Let there be chat
-
-also `client-cli.py` is deadly outdated, doesnt even work with current version
