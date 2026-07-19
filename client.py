@@ -9,11 +9,17 @@ import datetime
 import shlex
 import difflib
 import asyncio
-import desktop_notifier
+
+try:
+    import desktop_notifier
+    NOTIF_enabled = True
+except ImportError:
+    NOTIF_enabled = False
+
 try:
     import dns.resolver
     SRV_enabled = True
-except:
+except ImportError:
     SRV_enabled = False
 
 class UI:
@@ -106,8 +112,6 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
 
         self.listenThread = threading.Thread(target=self.listen,daemon=True)
 
-        self.notifier = desktop_notifier.DesktopNotifier("gChat Client")
-
         self.CTRLstat = None
         def sending(event,textvar:tkinter.Variable):
             message = textvar.get()
@@ -120,6 +124,13 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         ui.sendCommand("print",["[INFO] Use /connect to connect to a server\n"])
         ui.sendCommand("print",["[INFO] Use /help for more info\n"])
         ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz\n"])
+
+        if NOTIF_enabled:
+            self.notifier = desktop_notifier.DesktopNotifier("gChat Client")
+        else:
+            ui.sendCommand("print",["[INFO] Desktop notifications not supported\n"])
+            ui.sendCommand("print",["[INFO] Please install desktop_notifier\n"])
+            self.notifier = None
 
     def keepAlive(self):
         while self.active:
@@ -134,8 +145,8 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         global SRV_enabled
 
         if not SRV_enabled:
-            ui.sendCommand("print",["[INFO] SRV record resolution not supported\n"])
-            ui.sendCommand("print",["[INFO] Please install dnspython\n"])
+            self.ui.sendCommand("print",["[INFO] SRV record resolution not supported\n"])
+            self.ui.sendCommand("print",["[INFO] Please install dnspython\n"])
             return server, fallbackPort
 
         try:
@@ -146,6 +157,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             return server, fallbackPort  # fallback
 
     def connect(self, server:str, port:int):
+
         server, port = self.resolve(server,port)
         print(server,port)
         try:
@@ -186,7 +198,8 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
     
     def mention(self, sender:str, channel:str, message:str):
         self.ui.sendCommand("print",[f"[NOTIF] You were mentioned by {sender} in {channel}\n"])
-        asyncio.run(self.notifier.send("gChat Mention", f"You were mentioned by {sender} in {channel}", timeout=5))
+        if self.notifier:
+            asyncio.run(self.notifier.send("gChat Mention", f"You were mentioned by {sender} in {channel}", timeout=5))
 
     def onSend(self, event, message:str):
         if not message.startswith("/"):
