@@ -9,6 +9,7 @@ import datetime
 import shlex
 import difflib
 import asyncio
+import sys
 
 try:
     import desktop_notifier  # type: ignore[import-not-found]
@@ -20,7 +21,7 @@ try:
     import dns.resolver  # type: ignore[import-not-found]
     SRV_enabled = True
 except ImportError:
-    SRV_enabled = False
+    sys.exit("[ERROR] dnspython is required for SRV record resolution. Please install it using `pip install dnspython`")
 
 class UI:
 
