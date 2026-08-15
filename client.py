@@ -11,13 +11,13 @@ import difflib
 import asyncio
 
 try:
-    import desktop_notifier
+    import desktop_notifier  # type: ignore[import-not-found]
     NOTIF_enabled = True
 except ImportError:
     NOTIF_enabled = False
 
 try:
-    import dns.resolver
+    import dns.resolver  # type: ignore[import-not-found]
     SRV_enabled = True
 except ImportError:
     SRV_enabled = False
@@ -123,7 +123,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         ui.sendCommand("print",["[INFO] Use /name to set your name\n"])
         ui.sendCommand("print",["[INFO] Use /connect to connect to a server\n"])
         ui.sendCommand("print",["[INFO] Use /help for more info\n"])
-        ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.xyz\n"])
+        ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.fyi\n"])
 
         if NOTIF_enabled:
             self.notifier = desktop_notifier.DesktopNotifier("gChat Client")
