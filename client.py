@@ -392,11 +392,11 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             sender = sender.strip()
             message = ";".join(message).strip()
             if self.msgFormat == 0:
-                msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] @{sender}: {message}\n"
+                msg = f"[{datetime.datetime.fromtimestamp(round(timestamp))}] @{sender}: {message}\n"
             elif self.msgFormat == 1:
-                msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
+                msg = f"[{datetime.datetime.fromtimestamp(round(timestamp))}] <{sender}> {message}\n"
             else:
-                msg = f"[{datetime.datetime.fromtimestamp(round(time.time()))}] <{sender}> {message}\n"
+                msg = f"[{datetime.datetime.fromtimestamp(round(timestamp))}] <{sender}> {message}\n"
             self.ui.sendCommand("insert",[msg])
         elif self.CTRLstat == "list":
             name = line.strip().decode()
