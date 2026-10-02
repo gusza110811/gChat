@@ -107,7 +107,7 @@ The server MUST send updated NOTE values whenever the corresponding state change
 | --- | --- |
 | `RejectedUsername` | The username provided is rejected or invalid (e.g., contains ';') |
 | `RejectedChannel` | The channel name provided is rejected or invalid (e.g., contains ';') |
-| `Unauthorized` | A plugin unauthorized the client's request |
+| `Unauthorized` | A plugin rejected the client's message |
 
 Servers may define additional error codes, but all clients and servers must support these standard types.
 

@@ -1,10 +1,8 @@
-# gChat Protocol Reference Implementation
+# gChat Protocol
 GNU was not involved in this
 
 Let there be chat
 
-For the client to work fully, you need to install the dependencies listed in `requirements.txt`. You can do this by running:
+If you want to create an automated or simply custom client, see [gchat.py.md](gchat.py.md)
 
-```
-pip install -r requirements.txt
-```
+If you want to create a custom server, see [protocol.md](protocol.md).
