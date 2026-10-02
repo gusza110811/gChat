@@ -13,13 +13,11 @@ import sys
 
 try:
     import desktop_notifier  # type: ignore[import-not-found]
-    NOTIF_enabled = True
 except ImportError:
-    NOTIF_enabled = False
+    sys.exit("[ERROR] desktop_notifier is required for desktop notifications. Please install it using `pip install desktop-notifier`")
 
 try:
     import dns.resolver  # type: ignore[import-not-found]
-    SRV_enabled = True
 except ImportError:
     sys.exit("[ERROR] dnspython is required for SRV record resolution. Please install it using `pip install dnspython`")
 
@@ -126,12 +124,7 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
         ui.sendCommand("print",["[INFO] Use /help for more info\n"])
         ui.sendCommand("print",["[INFO] Try connecting to chat.gusza.fyi\n"])
 
-        if NOTIF_enabled:
-            self.notifier = desktop_notifier.DesktopNotifier("gChat Client")
-        else:
-            ui.sendCommand("print",["[INFO] Desktop notifications not supported\n"])
-            ui.sendCommand("print",["[INFO] Please install desktop_notifier\n"])
-            self.notifier = None
+        self.notifier = desktop_notifier.DesktopNotifier("gChat Client")
 
     def keepAlive(self):
         while self.active:
@@ -143,12 +136,6 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             time.sleep(self.pingInterval)
     
     def resolve(self, server:str, fallbackPort:int):
-        global SRV_enabled
-
-        if not SRV_enabled:
-            self.ui.sendCommand("print",["[INFO] SRV record resolution not supported\n"])
-            self.ui.sendCommand("print",["[INFO] Please install dnspython\n"])
-            return server, fallbackPort
 
         try:
             answers = dns.resolver.resolve(f"_gchat._tcp.{server}", "SRV")
