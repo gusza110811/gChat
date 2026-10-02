@@ -340,14 +340,17 @@ commands are fuzzy matched, so for example `conn` will work for `connect`
             err = line.decode()[4:].split()[0]
             if err == "Rejected":
                 suberr = line.decode()[4:].split()[1] if len(line.decode().split()) > 1 else ""
-                if suberr == "InvalidUsername":
+                message = line.decode()[4:].split(None, 2)[2] if len(line.decode().split()) > 2 else ""
+                if (suberr == "RejectedUsername") or (suberr == "InvalidUsername"):
                     self.ui.sendCommand("chname",[f"{self.currentName} ({self.preferredName})"])
-                    self.ui.sendCommand("print",["[ERROR] Invalid username\n"])
-                elif suberr == "UsernameTaken":
+                    self.ui.sendCommand("print",["[ERROR] Username Rejected: " + message + "\n"])
+                elif suberr == "UsernameTaken": # only for compatibility with old servers, new servers will use RejectedUsername
                     self.ui.sendCommand("print",["[ERROR] Username already taken\n"])
                     self.ui.sendCommand("chname",[f"{self.currentName} ({self.preferredName})"])
-                elif suberr == "InvalidChannel":
-                    self.ui.sendCommand("print",["[ERROR] Invalid channel name\n"])
+                elif (suberr == "RejectedChannel") or (suberr == "InvalidChannel"):
+                    self.ui.sendCommand("print",["[ERROR] Channel Rejected: " + message + "\n"])
+                elif suberr == "Unauthorized":
+                    self.ui.sendCommand("print",["[ERROR] Unauthorized: " + message + "\n"])
             else:
                 # Generic/Unknown errors
                 self.ui.sendCommand("print",["[ERROR] "+line.decode()[4:]+"\n"])

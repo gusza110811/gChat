@@ -105,10 +105,9 @@ The server MUST send updated NOTE values whenever the corresponding state change
 
 | Suberror | Description |
 | --- | --- |
-| `InvalidUsername` | The username provided is invalid (e.g., contains ';') |
-| `UsernameTaken` | The username provided is already in use by another client. |
-| `InvalidChannel` | The channel name provided is invalid (e.g., contains ';') |
-| `Unauthorized` | A plugin unauthorized the client's request (e.g., due to rate-limiting or other rules) |
+| `RejectedUsername` | The username provided is rejected or invalid (e.g., contains ';') |
+| `RejectedChannel` | The channel name provided is rejected or invalid (e.g., contains ';') |
+| `Unauthorized` | A plugin unauthorized the client's request |
 
 Servers may define additional error codes, but all clients and servers must support these standard types.
 

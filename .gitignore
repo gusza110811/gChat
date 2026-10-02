@@ -2,5 +2,4 @@
 !/.gitignore
 !/.dockerignore
 __pycache__
-cfg.json
-messages.json
+*.json

@@ -2,7 +2,8 @@ import typing
 import time, datetime
 
 class Commands:
-    def __init__(self, socket:"socket.socket", server:"server.Server", clients:"list[server.Server]", messages:list[tuple[str,str,str,str]]):
+    def __init__(self, socket:"socket.socket", server:"server.Server", clients:"list[server.Server]", messages:list[tuple[str,str,str,str]],
+                 plugin_user_connect_handlers:list[typing.Callable], plugin_user_disconnect_handlers:list[typing.Callable], plugin_receive_handlers:list[typing.Callable], plugin_change_name_handlers:list[typing.Callable], plugin_change_channel_handlers:list[typing.Callable]):
         self.socket = socket
         self.server = server
         self.address = server.address
@@ -25,19 +26,35 @@ class Commands:
         self.uid = server.uid
         self.pinged = False
 
+        self.plugin_user_connect_handlers = plugin_user_connect_handlers
+        self.plugin_user_disconnect_handlers = plugin_user_disconnect_handlers
+        self.plugin_receive_handlers = plugin_receive_handlers
+        self.plugin_change_name_handlers = plugin_change_name_handlers
+        self.plugin_change_channel_handlers = plugin_change_channel_handlers
+
     def NAME(self, arg:str):
         try:
             newname = arg.split()[0]
             if ";" in newname:
-                self.socket.send(b"ERR Rejected InvalidUsername\n")
+                self.socket.send(b"ERR Rejected RejectedUsername Cannot use semicolon\n")
                 return
             if newname.startswith("anon-"):
-                self.socket.send(b"ERR Rejected InvalidUsername\n")
+                self.socket.send(b"ERR Rejected RejectedUsername anon- prefix is reserved\n")
                 return
             for client in self.clients:
                 if client.username == newname:
-                    self.socket.send(b"ERR Rejected UsernameTaken\n")
+                    self.socket.send(b"ERR Rejected RejectedUsername Username taken\n")
                     return
+
+            for handler in self.plugin_change_name_handlers:
+                try:
+                    result = handler(self.uid, newname)
+                    if result:
+                        self.socket.send(("ERR Rejected RejectedUsername " + result + "\n").encode("utf-8"))
+                        return
+                except Exception as e:
+                    print(f"[ERROR] Plugin handler error: {e}")
+            
             oldname = self.server.username
             if oldname == newname:
                 return
@@ -57,8 +74,18 @@ class Commands:
         if target_channel == self.server.channel:
             return
         if ";" in target_channel:
-            self.socket.send(b"ERR Rejected InvalidChannel\n")
+            self.socket.send(b"ERR Rejected RejectedChannel Cannot use semicolon\n")
             return
+
+        for handler in self.plugin_change_channel_handlers:
+            try:
+                result = handler(self.uid, target_channel)
+                if result:
+                    self.socket.send(("ERR Rejected RejectedChannel " + result + "\n").encode("utf-8"))
+                    return
+            except Exception as e:
+                print(f"[ERROR] Plugin handler error: {e}")
+        
         if self.server.username:
             for client in self.clients:
                 client.recieve_message("left the channel",self.server.channel,self.server.username)
@@ -70,6 +97,17 @@ class Commands:
 
     def MSG(self, arg:str):
         print(f"[{self.uid}] {datetime.datetime.fromtimestamp(round(time.time()))} #{self.server.channel} <{self.server.username}> {arg}")
+
+        for handler in self.plugin_receive_handlers:
+            try:
+                result = handler(self.uid, self.server.channel, arg)
+                if result:
+                    if result != "Shadowed":
+                        self.socket.send(("ERR Rejected Unauthorized " + result + "\n").encode("utf-8"))
+                    return
+            except Exception as e:
+                print(f"[ERROR] Plugin handler error: {e}")
+
         self.messages.append((round(time.time()),self.server.channel,self.server.username,arg))
         for client in self.clients:
             client.recieve_message(arg,self.server.channel,self.server.username)
@@ -128,14 +166,24 @@ class Commands:
             self.socket.send(b"NOTE LINE_END = LF\n")
             self.socket.send(b"NOTE CH = all\n")
             self.socket.send(f"NOTE NAME = {self.server.username}\n".encode("utf-8"))
-            for client in self.clients:
-                client.recieve_message("just joined",self.server.channel,self.server.username)
             self.pinged = True
+
+            for handler in self.plugin_user_connect_handlers:
+                try:
+                    handler(self.uid)
+                except Exception as e:
+                    print(f"[ERROR] Plugin handler error: {e}")
 
         print(f"[{self.uid}] {(self.server.username or '')} sent PING")
         self.socket.send(b"PONG\n")
 
     def QUIT(self,arg:str):
+        for handler in self.plugin_user_disconnect_handlers:
+            try:
+                handler(self.uid)
+            except Exception as e:
+                print(f"[ERROR] Plugin handler error: {e}")
+
         print(f"[{self.uid}] {(self.server.username or '')} requested to disconnect")
         self.server.active = False
 
