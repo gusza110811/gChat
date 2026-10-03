@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gchat"]
+
+[project]
+#dynamic = ["version"]
+
+authors = [
+    {name = "Slava Nikolsky", email = "auguz1108@gmail.com"}
+]
+
+maintainers = [
+    {name = "Slava Nikolsky", email = "auguz1108@gmail.com"}
+]
+
+name = "gchat"
+version = "0.1.0"
+description = "A module providing abstraction for a gChat client"
+keywords = ["gChat", "chat"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+
+    "Environment :: Console",
+
+    "Intended Audience :: Developers",
+
+    "Topic :: System :: Emulators",
+    "Topic :: Education",
+    "Topic :: Software Development :: Build Tools",
+
+    "Programming Language :: Python :: 3.8",
+
+    "License :: Free for non-commercial use",
+
+    "Natural Language :: English",
+]
+
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+
+dependencies = []
+requires-python = ">= 3.8"
+
+[project.urls]
+Repository = "https://github.com/gusza110811/gChat"
