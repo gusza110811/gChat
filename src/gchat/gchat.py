@@ -221,6 +221,7 @@ class GChat:
             return
         if line == "CTRL end fetch":
             self._in_fetch = False
+            self._fetch_messages.reverse()
             self.on_fetch(self._fetch_messages)
             self._fetch_messages = []
             return
@@ -261,9 +262,6 @@ class GChat:
         # Unknown line
         self.on_raw(line)
 
-    # ------------------------------------------------------------------
-    # Context manager
-    # ------------------------------------------------------------------
     def __enter__(self):
         return self
 

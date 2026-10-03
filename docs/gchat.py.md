@@ -44,9 +44,9 @@ Behavior:
 2. Starts a background reader thread.
 3. Sends an initial `PING` command using the default line ending (`\n`).
 4. Waits for the server to respond with:
-   - `NOTE LINE_END`
-   - `NOTE CH`
-   - `NOTE NAME`
+   - `NOTE LINE_END = ...`
+   - `NOTE CH = ...`
+   - `NOTE NAME = ...`
    - `PONG`
 5. If the handshake does not complete within `connect_timeout`, it closes the socket and raises `TimeoutError`.
 
@@ -192,14 +192,14 @@ Any unhandled line is passed to:
 
 The client provides a set of callback functions:
 
-- `on_message(channel, sender, message)`
-- `on_note(key, value)`
-- `on_error(err_type, err_subtype, info)`
-- `on_list(names)`
-- `on_fetch(messages)`
-- `on_pong()`
-- `on_disconnect()`
-- `on_raw(line)`
+- `on_message(channel, sender, message)`: called when a chat message is received
+- `on_note(key, value)`: called when a protocol `NOTE` line is received
+- `on_error(err_type, err_subtype, info)`: called when a protocol `ERR` line is received
+- `on_list(names)`: called when a list of users is received
+- `on_fetch(messages)`: called when a fetch session ends
+- `on_pong()`: called when a `PONG` is received
+- `on_disconnect()`: called when the connection is closed
+- `on_raw(line)`: called for any unhandled lines
 
 If a callback is not provided, the event is simply ignored
 
@@ -240,8 +240,6 @@ client = GChat(
 )
 
 client.connect()
-client.name("alice")
-client.join("general")
 client.msg("hello from Python")
 
 # Wait for messages...
