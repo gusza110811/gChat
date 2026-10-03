@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 packages = ["src/gchat"]
 
 [project]
-dynamic = ["version"]
+#dynamic = ["version"]
 
 authors = [
     {name = "Slava Nikolsky", email = "auguz1108@gmail.com"}
@@ -17,7 +17,7 @@ maintainers = [
 ]
 
 name = "gchat"
-#version = "0.1.0"
+version = "0.1.1"
 description = "A module providing abstraction for a gChat client"
 keywords = ["gChat", "chat"]
 classifiers = [
